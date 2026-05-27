@@ -36,10 +36,13 @@ export async function updateSession(request: NextRequest) {
   // Role authorization and routing logic
   const url = request.nextUrl.clone();
   const isAuthPage = url.pathname.startsWith('/login') || url.pathname.startsWith('/register');
-  const isDashboardPage = url.pathname.startsWith('/tickets') || url.pathname === '/' || url.pathname.startsWith('/admin') || url.pathname.startsWith('/notifications');
+  const isPublicPage = url.pathname === '/' || url.pathname.startsWith('/login') || url.pathname.startsWith('/register');
+  
+  // Protect dashboard routes (everything except /login and /register)
+  const isProtectedRoute = !isAuthPage;
 
-  if (!user && isDashboardPage) {
-    // If user is not logged in and tries to access dashboard, redirect to login
+  if (!user && isProtectedRoute) {
+    // If user is not logged in and tries to access protected route, redirect to login
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
