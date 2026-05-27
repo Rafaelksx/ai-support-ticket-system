@@ -25,7 +25,8 @@ const updateTicketSchema = z.object({
 /**
  * GET /api/tickets/[id] - Get ticket details with comments and relations
  */
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
   const startTime = Date.now();
 
   try {
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     const supabase = await createClient();
-    const ticketId = params.id;
+    const ticketId = id;
 
     // Get ticket with relations
     const { data: ticket, error } = await supabase
@@ -80,7 +81,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 /**
  * PATCH /api/tickets/[id] - Update ticket (agent/admin only for most fields)
  */
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
   const startTime = Date.now();
 
   try {
@@ -102,7 +104,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
 
     const supabase = await createClient();
-    const ticketId = params.id;
+    const ticketId = id;
 
     // Build update object (only non-undefined fields)
     const updateData = Object.fromEntries(
@@ -152,7 +154,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 /**
  * DELETE /api/tickets/[id] - Delete ticket (admin only)
  */
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
   const startTime = Date.now();
 
   try {
@@ -168,7 +171,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     const supabase = await createClient();
-    const ticketId = params.id;
+    const ticketId = id;
 
     // Delete ticket (comments will be deleted via CASCADE)
     const { error } = await supabase.from('tickets').delete().eq('id', ticketId);
@@ -190,19 +193,3 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 /**
  * Handle unsupported methods
  */
-export async function handler(request: NextRequest) {
-  if (!['GET', 'PATCH', 'DELETE'].includes(request.method)) {
-    return methodNotAllowed(['GET', 'PATCH', 'DELETE']);
-  }
-
-  switch (request.method) {
-    case 'GET':
-      return GET(request, { params: { id: '' } });
-    case 'PATCH':
-      return PATCH(request, { params: { id: '' } });
-    case 'DELETE':
-      return DELETE(request, { params: { id: '' } });
-    default:
-      return methodNotAllowed(['GET', 'PATCH', 'DELETE']);
-  }
-}

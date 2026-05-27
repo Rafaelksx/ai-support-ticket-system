@@ -57,4 +57,3 @@ Devuelve EXACTAMENTE un objeto JSON con este formato:
 export type PromptType = typeof PROMPTS;
 export type PromptKey = keyof PromptType;
 export type PromptConfig = PromptType[PromptKey];
-export

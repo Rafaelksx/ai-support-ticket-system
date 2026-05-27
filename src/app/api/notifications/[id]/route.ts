@@ -11,17 +11,18 @@ import {
 /**
  * PATCH /api/notifications/[id] - Mark notification as read
  */
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const startTime = Date.now();
 
   try {
+    const { id } = await params;
     const user = await getAuthUser(request);
     if (!user) {
       return errorResponse('No autenticado', 'UNAUTHORIZED', 401);
     }
 
     const supabase = await createClient();
-    const notificationId = params.id;
+    const notificationId = id;
 
     // Verify notification belongs to user
     const { data: notification, error: fetchError } = await supabase
@@ -60,12 +61,4 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-/**
- * Handle unsupported methods
- */
-export async function handler(request: NextRequest) {
-  if (request.method !== 'PATCH') {
-    return methodNotAllowed(['PATCH']);
-  }
-  return PATCH(request, { params: { id: '' } });
-}
+

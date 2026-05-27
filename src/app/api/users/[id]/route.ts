@@ -13,15 +13,17 @@ import {
 
 // Validation schema for updating user role
 const updateUserRoleSchema = z.object({
-  role: z.enum(['admin', 'agent', 'user'], {
-    errorMap: () => ({ message: 'Role must be admin, agent, or user' }),
-  }),
+  role: z.enum(['admin' as const, 'agent' as const, 'user' as const]).refine(
+    (val) => ['admin', 'agent', 'user'].includes(val),
+    { message: 'Role must be admin, agent, or user' }
+  ),
 });
 
 /**
  * PATCH /api/users/[id] - Update user role (admin only)
  */
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
   const startTime = Date.now();
 
   try {
@@ -37,7 +39,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
 
     // Prevent admin from removing their own admin role
-    if (params.id === user.id) {
+    if (id === user.id) {
       const validation = await validateRequestBody(request, updateUserRoleSchema);
       if (validation.valid && (validation.data as any).role !== 'admin') {
         return errorResponse('No puedes remover tu propio rol de administrador', 'FORBIDDEN', 403);
@@ -57,7 +59,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { data: updatedUser, error } = await supabase
       .from('profiles')
       .update({ role })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single();
 
@@ -66,14 +68,14 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return errorResponse('Error al actualizar rol de usuario', 'DATABASE_ERROR', 500);
     }
 
-    await logAPICall(`/api/users/${params.id}`, 'PATCH', user.id, 200, Date.now() - startTime, {
+    await logAPICall(`/api/users/${id}`, 'PATCH', user.id, 200, Date.now() - startTime, {
       new_role: role,
     });
 
     // Create notification for user about role change
     await supabase.from('notifications').insert([
       {
-        user_id: params.id,
+        user_id: id,
         title: 'Tu rol ha sido actualizado',
         message: `Tu rol de acceso ha sido cambiado a ${role}`,
       },
@@ -89,9 +91,3 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 /**
  * Handle unsupported methods
  */
-export async function handler(request: NextRequest) {
-  if (request.method !== 'PATCH') {
-    return methodNotAllowed(['PATCH']);
-  }
-  return PATCH(request, { params: { id: '' } });
-}

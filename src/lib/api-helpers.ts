@@ -97,7 +97,7 @@ export async function validateRequestBody<T>(
     if (!validationResult.success) {
       return {
         valid: false,
-        error: validationResult.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
+        error: validationResult.error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', '),
       };
     }
 

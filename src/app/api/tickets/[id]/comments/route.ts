@@ -20,7 +20,8 @@ const createCommentSchema = z.object({
 /**
  * GET /api/tickets/[id]/comments - List comments for a ticket
  */
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
   const startTime = Date.now();
 
   try {
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     const supabase = await createClient();
-    const ticketId = params.id;
+    const ticketId = id;
     const { skip, take } = getPaginationParams(request);
 
     // Get comments with author info
@@ -67,7 +68,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 /**
  * POST /api/tickets/[id]/comments - Add a comment to a ticket
  */
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
   const startTime = Date.now();
 
   try {
@@ -83,7 +85,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     const { content, is_ai_generated } = validation.data as any;
-    const ticketId = params.id;
+    const ticketId = id;
 
     const supabase = await createClient();
 
@@ -151,14 +153,4 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   }
 }
 
-/**
- * Handle unsupported methods
- */
-export async function handler(request: NextRequest) {
-  if (!['GET', 'POST'].includes(request.method)) {
-    return methodNotAllowed(['GET', 'POST']);
-  }
-  return request.method === 'GET'
-    ? GET(request, { params: { id: '' } })
-    : POST(request, { params: { id: '' } });
-}
+
