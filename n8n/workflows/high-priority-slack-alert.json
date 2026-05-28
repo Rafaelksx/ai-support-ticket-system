@@ -1,0 +1,337 @@
+{
+  "name": "Alta Prioridad - Alerta Slack + Email Agente",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "high-priority",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger-hp",
+      "name": "Recibir Webhook Alta Prioridad",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "high-priority-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "secret-check-hp",
+              "leftValue": "={{ $json.headers['x-webhook-secret'] }}",
+              "rightValue": "={{ $env.N8N_WEBHOOK_SECRET }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "validate-secret-hp",
+      "name": "Validar Secret",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"error\": \"Unauthorized\" }",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "unauthorized-hp",
+      "name": "No Autorizado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [480, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\n\nconst priorityEmoji = {\n  'critical': '🔴',\n  'high': '🟠',\n  'medium': '🟡',\n  'low': '🟢'\n};\n\nconst sentimentEmoji = {\n  'angry': '😡',\n  'negative': '😞',\n  'neutral': '😐',\n  'positive': '😊'\n};\n\nreturn [{\n  json: {\n    ticket_id: body.ticket_id || 'N/A',\n    title: body.title || 'Sin título',\n    priority: body.priority || 'high',\n    priority_emoji: priorityEmoji[body.priority] || '🟠',\n    sentiment: body.sentiment || 'neutral',\n    sentiment_emoji: sentimentEmoji[body.sentiment] || '😐',\n    ai_summary: body.ai_summary || 'Sin resumen disponible',\n    assigned_to: body.assigned_to || 'Sin asignar',\n    assigned_email: body.assigned_email || '',\n    user_name: body.user_name || 'Usuario',\n    user_email: body.user_email || '',\n    risk_score: body.risk_score || 0,\n    risk_factors: Array.isArray(body.risk_factors) ? body.risk_factors.join(', ') : (body.risk_factors || 'No identificados'),\n    created_at: new Date().toISOString(),\n    app_url: $env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app',\n    ticket_url: ($env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app') + '/tickets/' + body.ticket_id,\n    is_critical: body.priority === 'critical'\n  }\n}];"
+      },
+      "id": "parse-payload-hp",
+      "name": "Parsear y Enriquecer Datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "channel": "#support-alerts",
+        "text": "={{ $json.priority_emoji }} *ALERTA: Ticket de {{ $json.priority === 'critical' ? 'PRIORIDAD CRÍTICA' : 'Alta Prioridad' }}*",
+        "otherOptions": {
+          "mrkdwn": true,
+          "blocks": [
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "{{ $json.priority_emoji }} Ticket {{ $json.priority === 'critical' ? 'CRÍTICO' : 'Alta Prioridad' }} Detectado",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "*📋 Título:*\n{{ $json.title }}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*🎯 Prioridad:*\n{{ $json.priority_emoji }} {{ $json.priority | upper }}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*{{ $json.sentiment_emoji }} Sentimiento:*\n{{ $json.sentiment }}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*⚠️ Risk Score:*\n{{ $json.risk_score }}/100"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*👤 Usuario:*\n{{ $json.user_name }}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*🔧 Asignado a:*\n{{ $json.assigned_to }}"
+                }
+              ]
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*🤖 Resumen IA:*\n{{ $json.ai_summary }}"
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*🔍 Factores de Riesgo:*\n{{ $json.risk_factors }}"
+              }
+            },
+            {
+              "type": "actions",
+              "elements": [
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🔗 Ir al Ticket",
+                    "emoji": true
+                  },
+                  "style": "danger",
+                  "url": "{{ $json.ticket_url }}"
+                }
+              ]
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "context",
+              "elements": [
+                {
+                  "type": "mrkdwn",
+                  "text": "🕐 {{ $json.created_at }} · ID: `{{ $json.ticket_id }}`"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "id": "slack-alert",
+      "name": "Enviar Alerta Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [960, 200],
+      "credentials": {
+        "slackApi": {
+          "id": "slack-credentials",
+          "name": "Slack AuraSupport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-agent-email",
+              "leftValue": "={{ $('Parsear y Enriquecer Datos').first().json.assigned_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-agent-email",
+      "name": "¿Tiene Email de Agente?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [960, 420]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Parsear y Enriquecer Datos').first().json.assigned_email }}",
+        "subject": "🚨 Ticket {{ $('Parsear y Enriquecer Datos').first().json.priority === 'critical' ? 'CRÍTICO' : 'Alta Prioridad' }} Asignado: {{ $('Parsear y Enriquecer Datos').first().json.title }}",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Alerta Alta Prioridad</title>\n</head>\n<body style=\"margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background:#f4f6f9;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f4f6f9;padding:40px 20px;\">\n    <tr>\n      <td align=\"center\">\n        <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);\">\n          <!-- Header Urgente -->\n          <tr>\n            <td style=\"background:linear-gradient(135deg,#dc2626 0%,#b91c1c 100%);padding:32px 40px;text-align:center;\">\n              <div style=\"font-size:48px;margin-bottom:8px;\">🚨</div>\n              <h1 style=\"color:#fff;margin:0;font-size:24px;font-weight:700;\">Ticket de Alta Prioridad</h1>\n              <p style=\"color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:14px;\">Acción requerida inmediatamente</p>\n            </td>\n          </tr>\n          <!-- Body -->\n          <tr>\n            <td style=\"padding:36px 40px;\">\n              <p style=\"color:#1e293b;font-size:16px;margin:0 0 24px;\">Hola <strong>{{ $('Parsear y Enriquecer Datos').first().json.assigned_to }}</strong>, se te ha asignado un ticket que requiere atención inmediata.</p>\n\n              <!-- Ticket Info -->\n              <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#fef2f2;border:2px solid #fca5a5;border-radius:10px;margin-bottom:24px;\">\n                <tr>\n                  <td style=\"padding:20px 24px;\">\n                    <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">\n                      <tr>\n                        <td colspan=\"2\" style=\"padding-bottom:12px;\">\n                          <span style=\"font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#dc2626;\">Título del Ticket</span><br>\n                          <span style=\"font-size:17px;font-weight:600;color:#1e293b;\">{{ $('Parsear y Enriquecer Datos').first().json.title }}</span>\n                        </td>\n                      </tr>\n                      <tr>\n                        <td style=\"padding:8px 0;width:50%;\">\n                          <span style=\"font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;font-weight:600;\">Prioridad</span><br>\n                          <span style=\"font-size:14px;font-weight:700;color:#dc2626;\">{{ $('Parsear y Enriquecer Datos').first().json.priority_emoji }} {{ $('Parsear y Enriquecer Datos').first().json.priority.toUpperCase() }}</span>\n                        </td>\n                        <td style=\"padding:8px 0;\">\n                          <span style=\"font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;font-weight:600;\">Sentimiento</span><br>\n                          <span style=\"font-size:14px;font-weight:600;color:#1e293b;\">{{ $('Parsear y Enriquecer Datos').first().json.sentiment_emoji }} {{ $('Parsear y Enriquecer Datos').first().json.sentiment }}</span>\n                        </td>\n                      </tr>\n                      <tr>\n                        <td colspan=\"2\" style=\"padding-top:12px;border-top:1px solid #fca5a5;\">\n                          <span style=\"font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;font-weight:600;\">Resumen IA</span><br>\n                          <span style=\"font-size:13px;color:#475569;line-height:1.5;\">{{ $('Parsear y Enriquecer Datos').first().json.ai_summary }}</span>\n                        </td>\n                      </tr>\n                      <tr>\n                        <td colspan=\"2\" style=\"padding-top:12px;\">\n                          <span style=\"font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;font-weight:600;\">Factores de Riesgo</span><br>\n                          <span style=\"font-size:13px;color:#dc2626;\">⚠️ {{ $('Parsear y Enriquecer Datos').first().json.risk_factors }}</span>\n                        </td>\n                      </tr>\n                    </table>\n                  </td>\n                </tr>\n              </table>\n\n              <!-- CTA -->\n              <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">\n                <tr>\n                  <td align=\"center\" style=\"padding-bottom:24px;\">\n                    <a href=\"{{ $('Parsear y Enriquecer Datos').first().json.ticket_url }}\" style=\"display:inline-block;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:700;\">🚨 Atender Ticket Ahora</a>\n                  </td>\n                </tr>\n              </table>\n\n              <p style=\"color:#94a3b8;font-size:12px;text-align:center;\">ID del Ticket: <code>{{ $('Parsear y Enriquecer Datos').first().json.ticket_id }}</code></p>\n            </td>\n          </tr>\n          <!-- Footer -->\n          <tr>\n            <td style=\"background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;text-align:center;\">\n              <p style=\"color:#94a3b8;font-size:12px;margin:0;\">© {{ new Date().getFullYear() }} AuraSupport · Alerta Automática del Sistema</p>\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "email-agent",
+      "name": "Email al Agente Asignado",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1200, 360],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-credentials",
+          "name": "Gmail AuraSupport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Alerta enviada', ticket_id: $('Parsear y Enriquecer Datos').first().json.ticket_id }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "success-response-hp",
+      "name": "Respuesta Exitosa",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1440, 300]
+    }
+  ],
+  "connections": {
+    "Recibir Webhook Alta Prioridad": {
+      "main": [
+        [
+          {
+            "node": "Validar Secret",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Secret": {
+      "main": [
+        [
+          {
+            "node": "Parsear y Enriquecer Datos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Autorizado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear y Enriquecer Datos": {
+      "main": [
+        [
+          {
+            "node": "Enviar Alerta Slack",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "¿Tiene Email de Agente?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Tiene Email de Agente?": {
+      "main": [
+        [
+          {
+            "node": "Email al Agente Asignado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Enviar Alerta Slack": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Exitosa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email al Agente Asignado": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Exitosa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "tag-aura-support",
+      "name": "AuraSupport"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
