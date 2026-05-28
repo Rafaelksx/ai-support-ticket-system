@@ -48,7 +48,7 @@ export default function RegisterPage() {
       }
 
       if (data.session) {
-        router.push('/dashboard');
+        router.push('/');
         router.refresh();
       } else {
         setError('Se registró correctamente. Por favor, verifica tu email y inicia sesión.');

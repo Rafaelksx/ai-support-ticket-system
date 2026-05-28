@@ -47,7 +47,7 @@ export default function EditTicketPage({
         .single();
 
       if (profile?.role !== 'agent' && profile?.role !== 'admin') {
-        router.push(`/dashboard/tickets/${resolved.id}`);
+        router.push(`/tickets/${resolved.id}`);
         return;
       }
 
@@ -101,7 +101,7 @@ export default function EditTicketPage({
         return;
       }
 
-      router.push(`/dashboard/tickets/${ticketId}`);
+      router.push(`/tickets/${ticketId}`);
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'Error al guardar');
@@ -117,7 +117,7 @@ export default function EditTicketPage({
     return (
       <div className="text-center py-12">
         <p className="text-slate-400 mb-4">Ticket no encontrado</p>
-        <Link href="/dashboard/tickets">
+        <Link href="//tickets">
           <Button variant="outline">Volver</Button>
         </Link>
       </div>

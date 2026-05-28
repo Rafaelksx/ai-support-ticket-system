@@ -39,7 +39,7 @@ export default async function TicketDetailPage({
     return (
       <div className="text-center py-12">
         <p className="text-slate-400 mb-4">Ticket no encontrado</p>
-        <Link href="/dashboard/tickets">
+        <Link href="//tickets">
           <Button variant="outline">Volver a Tickets</Button>
         </Link>
       </div>
@@ -61,7 +61,7 @@ export default async function TicketDetailPage({
     return (
       <div className="text-center py-12">
         <p className="text-slate-400 mb-4">No tienes permiso para ver este ticket</p>
-        <Link href="/dashboard">
+        <Link href="/">
           <Button variant="outline">Volver al Dashboard</Button>
         </Link>
       </div>
@@ -109,7 +109,7 @@ export default async function TicketDetailPage({
           </p>
         </div>
         {isAgent && (
-          <Link href={`/dashboard/tickets/${ticketId}/edit`}>
+          <Link href={`/tickets/${ticketId}/edit`}>
             <Button>Editar</Button>
           </Link>
         )}

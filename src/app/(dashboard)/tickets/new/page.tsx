@@ -73,7 +73,7 @@ export default function NewTicketPage() {
           console.error('Failed to classify ticket:', err);
         }
 
-        router.push(`/dashboard/tickets/${ticket.id}`);
+        router.push(`/tickets/${ticket.id}`);
         router.refresh();
       }
     } catch (err: any) {

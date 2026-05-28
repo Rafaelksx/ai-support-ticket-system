@@ -102,7 +102,7 @@ export default function TicketsPage() {
           <h1 className="text-3xl font-bold text-white">Tickets</h1>
           <p className="text-slate-400">Gestiona todos tus tickets de soporte</p>
         </div>
-        <Link href="/dashboard/tickets/new">
+        <Link href="/tickets/new">
           <Button>Nuevo Ticket</Button>
         </Link>
       </div>
@@ -168,7 +168,7 @@ export default function TicketsPage() {
           ) : tickets.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-slate-400 mb-4">No hay tickets</p>
-              <Link href="/dashboard/tickets/new">
+              <Link href="/tickets/new">
                 <Button>Crear un Ticket</Button>
               </Link>
             </div>
@@ -191,7 +191,7 @@ export default function TicketsPage() {
                     <tr key={ticket.id} className="hover:bg-slate-800/30 transition-colors">
                       <td className="px-4 py-3">
                         <Link
-                          href={`/dashboard/tickets/${ticket.id}`}
+                          href={`/tickets/${ticket.id}`}
                           className="text-indigo-400 hover:text-indigo-300 max-w-xs truncate block"
                         >
                           {ticket.title}
@@ -221,7 +221,7 @@ export default function TicketsPage() {
                         {new Date(ticket.created_at).toLocaleDateString('es-MX')}
                       </td>
                       <td className="px-4 py-3">
-                        <Link href={`/dashboard/tickets/${ticket.id}`}>
+                        <Link href={`/tickets/${ticket.id}`}>
                           <Button variant="ghost" size="sm">
                             Ver
                           </Button>
@@ -235,7 +235,7 @@ export default function TicketsPage() {
               {/* Mobile card view */}
               <div className="space-y-3 md:hidden">
                 {tickets.map((ticket: any) => (
-                  <Link key={ticket.id} href={`/dashboard/tickets/${ticket.id}`}>
+                  <Link key={ticket.id} href={`/tickets/${ticket.id}`}>
                     <div className="p-4 rounded-lg bg-slate-800/30 border border-slate-700 hover:bg-slate-800/50 transition-colors">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <p className="text-sm font-semibold text-indigo-400 truncate flex-1">

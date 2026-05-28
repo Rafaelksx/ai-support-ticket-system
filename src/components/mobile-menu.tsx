@@ -13,22 +13,22 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    href: '/dashboard',
+    href: '/',
     label: 'Dashboard',
     icon: '📊',
   },
   {
-    href: '/dashboard/tickets',
+    href: '//tickets',
     label: 'Tickets',
     icon: '🎫',
   },
   {
-    href: '/dashboard/tickets/new',
+    href: '/tickets/new',
     label: 'Nuevo',
     icon: '➕',
   },
   {
-    href: '/dashboard/admin',
+    href: '/admin',
     label: 'Admin',
     icon: '⚙️',
     adminOnly: true,
