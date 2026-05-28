@@ -17,22 +17,21 @@ export default async function DashboardLayout({
   }
 
   // Get user profile
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('full_name, role')
     .eq('id', user.id)
     .single();
 
-  if (!profile) {
-    redirect('/login');
-  }
+  // If profile is not found (e.g. trigger didn't fire), use defaults so the page renders
+  const userProfile = profile ?? { full_name: user.email ?? 'Usuario', role: 'user' as const };
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <NavBar userName={profile.full_name} userRole={profile.role} />
+      <NavBar userName={userProfile.full_name} userRole={userProfile.role} />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar userRole={profile.role} />
+        <Sidebar userRole={userProfile.role} />
 
         <main className="flex-1 overflow-auto w-full">
           <div className="p-4 md:p-6 max-w-7xl mx-auto w-full">{children}</div>

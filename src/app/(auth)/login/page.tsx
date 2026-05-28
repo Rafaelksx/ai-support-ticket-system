@@ -35,11 +35,13 @@ export default function LoginPage() {
       }
 
       if (data.session) {
-        router.push('/');
-        router.refresh();
+        window.location.href = '/';
+      } else {
+        setError('Por favor confirma tu correo electrónico antes de iniciar sesión.');
+        setIsLoading(false);
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred during login');
+      setError(err.message || 'Ocurrió un error durante el inicio de sesión.');
       setIsLoading(false);
     }
   };
