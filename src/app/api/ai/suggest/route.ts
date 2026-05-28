@@ -80,7 +80,7 @@ Historial de Discusión:
 ${discussionHistory}
     `;
 
-    const model = process.env.OPENAI_MODEL_ADVANCED || 'gpt-4o';
+    const model = process.env.OPENAI_MODEL_ADVANCED || 'gemini-1.5-flash';
 
     // 3. Invoke OpenAI (using more advanced model for reply writing)
     const response = await openai.chat.completions.create({

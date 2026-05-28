@@ -44,7 +44,7 @@ Categoría Actual: ${ticket.categories?.name || 'Ninguna'}
 Creado por: ${ticket.profiles?.full_name || 'Desconocido'}
     `;
 
-    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    const model = process.env.OPENAI_MODEL || 'gemini-1.5-flash';
 
     // 3. Invoke OpenAI
     const response = await openai.chat.completions.create({
