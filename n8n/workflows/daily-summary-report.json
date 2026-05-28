@@ -20,84 +20,106 @@
     },
     {
       "parameters": {
-        "url": "=https://xpxbgiimpembuvzbonzi.supabase.co/rest/v1/tickets?status=eq.open&select=id,priority,sentiment,assigned_to,created_at",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "response": {
-            "response": {
-              "fullResponse": false
-            }
-          }
-        },
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/tickets?status=eq.open&select=id,priority,sentiment,assigned_to,created_at",
+        "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhweGJnaWltcGVtYnV2emJvbnppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MTA4ODQsImV4cCI6MjA5NTQ4Njg4NH0.EnUgw8Qpp1tgdfAZPLb33JYSB6_xqcVrqVB1V3zYnKw"
-            }
+            { "name": "apikey", "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $vars.SUPABASE_SERVICE_ROLE_KEY }}" }
           ]
-        }
+        },
+        "options": {}
       },
       "id": "2",
-      "name": "Obtener Tickets Abiertos",
+      "name": "Tickets Abiertos",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
+      "alwaysOutputData": true,
       "position": [480, 300]
     },
     {
       "parameters": {
-        "url": "=https://xpxbgiimpembuvzbonzi.supabase.co/rest/v1/tickets?status=eq.resolved&select=id,priority,sentiment,created_at,updated_at",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "response": {
-            "response": {
-              "fullResponse": false
-            }
-          }
-        },
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/tickets?status=eq.in_progress&select=id,priority,sentiment,assigned_to,created_at",
+        "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhweGJnaWltcGVtYnV2emJvbnppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MTA4ODQsImV4cCI6MjA5NTQ4Njg4NH0.EnUgw8Qpp1tgdfAZPLb33JYSB6_xqcVrqVB1V3zYnKw"
-            }
+            { "name": "apikey", "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $vars.SUPABASE_SERVICE_ROLE_KEY }}" }
           ]
-        }
+        },
+        "options": {}
       },
       "id": "3",
-      "name": "Obtener Tickets Resueltos",
+      "name": "Tickets En Progreso",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
+      "alwaysOutputData": true,
       "position": [720, 300]
     },
     {
       "parameters": {
-        "jsCode": "// Get data from previous nodes\nconst openTicketsRaw = $('Obtener Tickets Abiertos').all();\nconst resolvedTicketsRaw = $('Obtener Tickets Resueltos').all();\n\n// Flatten: each HTTP node returns items, each item.json may be a ticket or an array\nlet openTickets = [];\nfor (const item of openTicketsRaw) {\n  if (Array.isArray(item.json)) {\n    openTickets = openTickets.concat(item.json);\n  } else if (item.json && item.json.id) {\n    openTickets.push(item.json);\n  }\n}\n\nlet resolvedTickets = [];\nfor (const item of resolvedTicketsRaw) {\n  if (Array.isArray(item.json)) {\n    resolvedTickets = resolvedTickets.concat(item.json);\n  } else if (item.json && item.json.id) {\n    resolvedTickets.push(item.json);\n  }\n}\n\nconst totalOpen = openTickets.length;\nconst totalResolved = resolvedTickets.length;\nconst totalAll = totalOpen + totalResolved;\n\n// Count by priority\nconst byPriority = { critical: 0, high: 0, medium: 0, low: 0 };\nfor (const t of openTickets) {\n  const p = t.priority || 'medium';\n  if (byPriority[p] !== undefined) byPriority[p]++;\n}\n\n// Count critical (open)\nconst totalCritical = byPriority.critical + byPriority.high;\n\n// Count unassigned\nconst unassigned = openTickets.filter(t => !t.assigned_to).length;\n\n// Count overdue (open > 24h)\nconst now = new Date();\nconst overdue = openTickets.filter(t => {\n  const created = new Date(t.created_at);\n  return (now - created) > 24 * 60 * 60 * 1000;\n}).length;\n\n// Sentiment counts from open tickets\nconst bySentiment = { angry: 0, negative: 0, neutral: 0, positive: 0 };\nfor (const t of openTickets) {\n  const s = t.sentiment || 'neutral';\n  if (bySentiment[s] !== undefined) bySentiment[s]++;\n}\n\n// Resolution rate\nconst resolutionRate = totalAll > 0 ? Math.round((totalResolved / totalAll) * 100) : 0;\n\nconst today = new Date().toLocaleDateString('es-ES', {\n  weekday: 'long',\n  year: 'numeric',\n  month: 'long',\n  day: 'numeric',\n  timeZone: 'America/New_York'\n});\n\nreturn [{\n  json: {\n    date: today,\n    total_open: totalOpen,\n    total_resolved: totalResolved,\n    total_critical: totalCritical,\n    resolution_rate: resolutionRate,\n    unassigned: unassigned,\n    overdue_tickets: overdue,\n    by_priority: byPriority,\n    by_sentiment: bySentiment\n  }\n}];"
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/tickets?status=eq.resolved&select=id,priority,sentiment,created_at,updated_at",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $vars.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        },
+        "options": {}
       },
       "id": "4",
-      "name": "Calcular Metricas",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "name": "Tickets Resueltos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
       "position": [960, 300]
     },
     {
       "parameters": {
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/tickets?status=eq.closed&select=id,priority,sentiment,created_at,updated_at",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $vars.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5",
+      "name": "Tickets Cerrados",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Helper: flatten Supabase REST response into array of tickets\nfunction flatten(nodeItems) {\n  let result = [];\n  for (const item of nodeItems) {\n    if (Array.isArray(item.json)) result = result.concat(item.json);\n    else if (item.json && item.json.id) result.push(item.json);\n  }\n  return result;\n}\n\nconst open       = flatten($('Tickets Abiertos').all());\nconst inProgress = flatten($('Tickets En Progreso').all());\nconst resolved   = flatten($('Tickets Resueltos').all());\nconst closed     = flatten($('Tickets Cerrados').all());\n\nconst totalOpen       = open.length;\nconst totalInProgress = inProgress.length;\nconst totalResolved   = resolved.length;\nconst totalClosed     = closed.length;\nconst totalAll        = totalOpen + totalInProgress + totalResolved + totalClosed;\nconst totalActive     = totalOpen + totalInProgress;\n\n// Priority breakdown across ALL active tickets\nconst byPriority = { critical: 0, high: 0, medium: 0, low: 0 };\nfor (const t of [...open, ...inProgress]) {\n  const p = t.priority || 'medium';\n  if (byPriority[p] !== undefined) byPriority[p]++;\n}\n\n// Resolution rate = (resolved + closed) / total\nconst resolutionRate = totalAll > 0 ? Math.round(((totalResolved + totalClosed) / totalAll) * 100) : 0;\n\n// Unassigned open tickets\nconst unassigned = open.filter(t => !t.assigned_to).length;\n\n// Overdue: open tickets older than 24h\nconst now = new Date();\nconst overdue = open.filter(t => (now - new Date(t.created_at)) > 86400000).length;\n\n// Sentiment breakdown across ALL tickets\nconst allTickets = [...open, ...inProgress, ...resolved, ...closed];\nconst bySentiment = { angry: 0, negative: 0, neutral: 0, positive: 0 };\nfor (const t of allTickets) {\n  const s = t.sentiment || 'neutral';\n  if (bySentiment[s] !== undefined) bySentiment[s]++;\n}\n\n// Priority bar widths (% of active tickets)\nconst maxBar = totalActive > 0 ? totalActive : 1;\nconst bars = {\n  critical: Math.round((byPriority.critical / maxBar) * 100),\n  high:     Math.round((byPriority.high     / maxBar) * 100),\n  medium:   Math.round((byPriority.medium   / maxBar) * 100),\n  low:      Math.round((byPriority.low      / maxBar) * 100)\n};\n\nconst today = new Date().toLocaleDateString('es-ES', {\n  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',\n  timeZone: 'America/New_York'\n});\n\nreturn [{\n  json: {\n    date: today,\n    total_open: totalOpen,\n    total_in_progress: totalInProgress,\n    total_resolved: totalResolved,\n    total_closed: totalClosed,\n    total_all: totalAll,\n    total_active: totalActive,\n    resolution_rate: resolutionRate,\n    unassigned: unassigned,\n    overdue_tickets: overdue,\n    by_priority: byPriority,\n    bars: bars,\n    by_sentiment: bySentiment\n  }\n}];"
+      },
+      "id": "6",
+      "name": "Calcular Metricas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1440, 300]
+    },
+    {
+      "parameters": {
         "sendTo": "=rafaelkstro@gmail.com",
-        "subject": "=📊 Reporte Diario de Soporte - {{ $json.date }}",
+        "subject": "=📊 Reporte Diario · {{ $json.date }}",
         "emailType": "html",
-        "message": "",
-        "html": "<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"></head><body style=\"margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background-color:#f0f2f5;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#f0f2f5;padding:40px 20px;\"><tr><td align=\"center\"><table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);\"><tr><td style=\"background:linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%);padding:36px 40px;text-align:center;\"><h1 style=\"color:#fff;margin:0;font-size:24px;font-weight:700;\">📊 Reporte Diario</h1><p style=\"color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:14px;\">{{ $json.date }}</p></td></tr><tr><td style=\"padding:36px 40px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin-bottom:24px;\"><tr><td width=\"25%\" align=\"center\" style=\"padding:8px;\"><div style=\"background:#eff6ff;border-radius:12px;padding:16px 8px;\"><div style=\"font-size:28px;font-weight:700;color:#2563eb;\">{{ $json.total_open }}</div><div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;\">Abiertos</div></div></td><td width=\"25%\" align=\"center\" style=\"padding:8px;\"><div style=\"background:#f0fdf4;border-radius:12px;padding:16px 8px;\"><div style=\"font-size:28px;font-weight:700;color:#16a34a;\">{{ $json.total_resolved }}</div><div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;\">Resueltos</div></div></td><td width=\"25%\" align=\"center\" style=\"padding:8px;\"><div style=\"background:#fef2f2;border-radius:12px;padding:16px 8px;\"><div style=\"font-size:28px;font-weight:700;color:#dc2626;\">{{ $json.total_critical }}</div><div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;\">Urgentes</div></div></td><td width=\"25%\" align=\"center\" style=\"padding:8px;\"><div style=\"background:#faf5ff;border-radius:12px;padding:16px 8px;\"><div style=\"font-size:28px;font-weight:700;color:#7c3aed;\">{{ $json.resolution_rate }}%</div><div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;\">Resolucion</div></div></td></tr></table><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:24px;\"><tr><td style=\"padding:20px 24px;\"><h3 style=\"color:#1e293b;margin:0 0 16px;font-size:15px;\">🎯 Distribución por Prioridad</h3><table width=\"100%\" cellpadding=\"4\" cellspacing=\"0\"><tr><td style=\"color:#64748b;font-size:13px;\">🔴 Crítico</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_priority.critical }}</td></tr><tr><td style=\"color:#64748b;font-size:13px;\">🟠 Alta</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_priority.high }}</td></tr><tr><td style=\"color:#64748b;font-size:13px;\">🔵 Media</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_priority.medium }}</td></tr><tr><td style=\"color:#64748b;font-size:13px;\">🟢 Baja</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_priority.low }}</td></tr></table></td></tr></table><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:24px;\"><tr><td style=\"padding:20px 24px;\"><h3 style=\"color:#1e293b;margin:0 0 16px;font-size:15px;\">💬 Sentimiento del Usuario</h3><table width=\"100%\" cellpadding=\"4\" cellspacing=\"0\"><tr><td style=\"color:#64748b;font-size:13px;\">😡 Enojado</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_sentiment.angry }}</td></tr><tr><td style=\"color:#64748b;font-size:13px;\">😞 Negativo</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_sentiment.negative }}</td></tr><tr><td style=\"color:#64748b;font-size:13px;\">😐 Neutro</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_sentiment.neutral }}</td></tr><tr><td style=\"color:#64748b;font-size:13px;\">😊 Positivo</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_sentiment.positive }}</td></tr></table></td></tr></table><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#fff7ed;border-radius:12px;border:1px solid #fed7aa;margin-bottom:24px;\"><tr><td style=\"padding:16px 24px;\"><h3 style=\"color:#c2410c;margin:0 0 8px;font-size:14px;\">⚠️ Alertas</h3><p style=\"color:#475569;font-size:13px;margin:0;line-height:1.6;\">{{ $json.unassigned }} ticket(s) sin asignar · {{ $json.overdue_tickets }} ticket(s) con mas de 24h abiertos</p></td></tr></table><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\"><a href=\"https://ai-support-ticket-system-lac.vercel.app\" style=\"display:inline-block;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;text-decoration:none;padding:14px 36px;border-radius:10px;font-size:15px;font-weight:600;\">📋 Ir al Dashboard</a></td></tr></table></td></tr><tr><td style=\"background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;text-align:center;\"><p style=\"color:#94a3b8;font-size:12px;margin:0;\">© 2025 AuraSupport · Reporte Automatico Diario</p></td></tr></table></td></tr></table></body></html>",
+        "message": "=Reporte diario AuraSupport: {{ $json.total_open }} abiertos, {{ $json.total_in_progress }} en progreso, {{ $json.total_resolved }} resueltos, {{ $json.total_closed }} cerrados. Tasa de resolucion: {{ $json.resolution_rate }}%.",
+        "html": "<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"></head><body style=\"margin:0;padding:0;font-family:Arial,sans-serif;\" bgcolor=\"#eef2f7\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" bgcolor=\"#eef2f7\"><tr><td align=\"center\" style=\"padding:32px 16px;\"><table width=\"600\" cellpadding=\"0\" cellspacing=\"0\"><!-- HEADER --><tr><td bgcolor=\"#1e293b\" align=\"center\" style=\"padding:36px 40px;\"><p style=\"margin:0 0 4px;font-size:11px;color:#a5b4fc;font-weight:bold;text-transform:uppercase;letter-spacing:2px;\">AuraSupport &middot; Reporte Automatico</p><h1 style=\"margin:8px 0 4px;font-size:26px;font-weight:bold;color:#ffffff;\">Reporte Diario</h1><p style=\"margin:0;font-size:14px;color:#94a3b8;\">{{ $json.date }}</p></td></tr><!-- GAP --><tr><td bgcolor=\"#ffffff\" style=\"padding:24px 28px 8px;\"><!-- STATUS CARDS --><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td width=\"25%\" style=\"padding:4px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#dbeafe\" align=\"center\" style=\"padding:16px 6px;\"><p style=\"margin:0;font-size:26px;font-weight:bold;color:#1d4ed8;\">{{ $json.total_open }}</p><p style=\"margin:6px 0 0;font-size:10px;font-weight:bold;color:#2563eb;text-transform:uppercase;letter-spacing:1px;\">Abiertos</p></td></tr></table></td><td width=\"25%\" style=\"padding:4px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#fed7aa\" align=\"center\" style=\"padding:16px 6px;\"><p style=\"margin:0;font-size:26px;font-weight:bold;color:#c2410c;\">{{ $json.total_in_progress }}</p><p style=\"margin:6px 0 0;font-size:10px;font-weight:bold;color:#ea580c;text-transform:uppercase;letter-spacing:1px;\">En Progreso</p></td></tr></table></td><td width=\"25%\" style=\"padding:4px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#bbf7d0\" align=\"center\" style=\"padding:16px 6px;\"><p style=\"margin:0;font-size:26px;font-weight:bold;color:#15803d;\">{{ $json.total_resolved }}</p><p style=\"margin:6px 0 0;font-size:10px;font-weight:bold;color:#16a34a;text-transform:uppercase;letter-spacing:1px;\">Resueltos</p></td></tr></table></td><td width=\"25%\" style=\"padding:4px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#e2e8f0\" align=\"center\" style=\"padding:16px 6px;\"><p style=\"margin:0;font-size:26px;font-weight:bold;color:#475569;\">{{ $json.total_closed }}</p><p style=\"margin:6px 0 0;font-size:10px;font-weight:bold;color:#64748b;text-transform:uppercase;letter-spacing:1px;\">Cerrados</p></td></tr></table></td></tr></table></td></tr><!-- RESOLUTION BAR --><tr><td bgcolor=\"#ffffff\" style=\"padding:16px 28px 8px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#6366f1\" style=\"padding:18px 22px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td><span style=\"color:#e0e7ff;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;\">Tasa de Resolucion Global</span></td><td align=\"right\"><span style=\"color:#ffffff;font-size:22px;font-weight:bold;\">{{ $json.resolution_rate }}%</span></td></tr><tr><td colspan=\"2\" style=\"padding-top:10px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#ffffff\" width=\"{{ $json.resolution_rate }}%\" height=\"8\" style=\"font-size:1px;line-height:1px;\">&nbsp;</td><td bgcolor=\"#818cf8\" height=\"8\" style=\"font-size:1px;line-height:1px;\">&nbsp;</td></tr></table></td></tr><tr><td colspan=\"2\" style=\"padding-top:8px;\"><span style=\"color:#c7d2fe;font-size:12px;\">{{ $json.total_resolved + $json.total_closed }} de {{ $json.total_all }} tickets completados</span></td></tr></table></td></tr></table></td></tr><!-- PRIORITY --><tr><td bgcolor=\"#ffffff\" style=\"padding:16px 28px 8px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#f8fafc\" style=\"padding:18px 22px;border:1px solid #e2e8f0;\"><p style=\"margin:0 0 14px;font-size:14px;font-weight:bold;color:#1e293b;\">Prioridad de Tickets Activos</p><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"padding:4px 0;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td width=\"80\" style=\"font-size:12px;color:#64748b;\">Critico</td><td style=\"padding:0 8px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#ef4444\" width=\"{{ $json.bars.critical > 0 ? $json.bars.critical : 2 }}%\" height=\"10\" style=\"font-size:1px;line-height:1px;\">&nbsp;</td><td bgcolor=\"#fee2e2\" height=\"10\" style=\"font-size:1px;line-height:1px;\">&nbsp;</td></tr></table></td><td width=\"28\" align=\"right\" style=\"font-size:13px;font-weight:bold;color:#dc2626;\">{{ $json.by_priority.critical }}</td></tr></table></td></tr><tr><td style=\"padding:4px 0;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td width=\"80\" style=\"font-size:12px;color:#64748b;\">Alta</td><td style=\"padding:0 8px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#f97316\" width=\"{{ $json.bars.high > 0 ? $json.bars.high : 2 }}%\" height=\"10\" style=\"font-size:1px;line-height:1px;\">&nbsp;</td><td bgcolor=\"#ffedd5\" height=\"10\" style=\"font-size:1px;line-height:1px;\">&nbsp;</td></tr></table></td><td width=\"28\" align=\"right\" style=\"font-size:13px;font-weight:bold;color:#ea580c;\">{{ $json.by_priority.high }}</td></tr></table></td></tr><tr><td style=\"padding:4px 0;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td width=\"80\" style=\"font-size:12px;color:#64748b;\">Media</td><td style=\"padding:0 8px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#3b82f6\" width=\"{{ $json.bars.medium > 0 ? $json.bars.medium : 2 }}%\" height=\"10\" style=\"font-size:1px;line-height:1px;\">&nbsp;</td><td bgcolor=\"#dbeafe\" height=\"10\" style=\"font-size:1px;line-height:1px;\">&nbsp;</td></tr></table></td><td width=\"28\" align=\"right\" style=\"font-size:13px;font-weight:bold;color:#2563eb;\">{{ $json.by_priority.medium }}</td></tr></table></td></tr><tr><td style=\"padding:4px 0;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td width=\"80\" style=\"font-size:12px;color:#64748b;\">Baja</td><td style=\"padding:0 8px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#22c55e\" width=\"{{ $json.bars.low > 0 ? $json.bars.low : 2 }}%\" height=\"10\" style=\"font-size:1px;line-height:1px;\">&nbsp;</td><td bgcolor=\"#dcfce7\" height=\"10\" style=\"font-size:1px;line-height:1px;\">&nbsp;</td></tr></table></td><td width=\"28\" align=\"right\" style=\"font-size:13px;font-weight:bold;color:#16a34a;\">{{ $json.by_priority.low }}</td></tr></table></td></tr></table></td></tr></table></td></tr><!-- SENTIMENT --><tr><td bgcolor=\"#ffffff\" style=\"padding:16px 28px 8px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#f8fafc\" style=\"padding:18px 22px;border:1px solid #e2e8f0;\"><p style=\"margin:0 0 14px;font-size:14px;font-weight:bold;color:#1e293b;\">Sentimiento del Usuario</p><table width=\"100%\" cellpadding=\"4\" cellspacing=\"0\"><tr><td width=\"25%\" align=\"center\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#fef2f2\" align=\"center\" style=\"padding:12px 4px;\"><p style=\"margin:0;font-size:20px;font-weight:bold;color:#dc2626;\">{{ $json.by_sentiment.angry }}</p><p style=\"margin:4px 0 0;font-size:11px;color:#94a3b8;\">Enojado</p></td></tr></table></td><td width=\"25%\" align=\"center\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#fff7ed\" align=\"center\" style=\"padding:12px 4px;\"><p style=\"margin:0;font-size:20px;font-weight:bold;color:#ea580c;\">{{ $json.by_sentiment.negative }}</p><p style=\"margin:4px 0 0;font-size:11px;color:#94a3b8;\">Negativo</p></td></tr></table></td><td width=\"25%\" align=\"center\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#f1f5f9\" align=\"center\" style=\"padding:12px 4px;\"><p style=\"margin:0;font-size:20px;font-weight:bold;color:#64748b;\">{{ $json.by_sentiment.neutral }}</p><p style=\"margin:4px 0 0;font-size:11px;color:#94a3b8;\">Neutro</p></td></tr></table></td><td width=\"25%\" align=\"center\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#f0fdf4\" align=\"center\" style=\"padding:12px 4px;\"><p style=\"margin:0;font-size:20px;font-weight:bold;color:#16a34a;\">{{ $json.by_sentiment.positive }}</p><p style=\"margin:4px 0 0;font-size:11px;color:#94a3b8;\">Positivo</p></td></tr></table></td></tr></table></td></tr></table></td></tr><!-- ALERTS --><tr><td bgcolor=\"#ffffff\" style=\"padding:16px 28px 8px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td bgcolor=\"#fef9c3\" style=\"padding:18px 20px;border:1px solid #fcd34d;\"><p style=\"margin:0 0 8px;font-size:13px;font-weight:bold;color:#92400e;\">Alertas del Dia</p><p style=\"margin:0;font-size:13px;color:#78350f;line-height:1.7;\">{{ $json.unassigned > 0 ? $json.unassigned + ' ticket(s) sin asignar' : 'Todos los tickets tienen agente asignado' }}<br>{{ $json.overdue_tickets > 0 ? $json.overdue_tickets + ' ticket(s) llevan mas de 24h abiertos' : 'Ningun ticket supera las 24h sin atencion' }}</p></td></tr></table></td></tr><!-- CTA --><tr><td bgcolor=\"#ffffff\" align=\"center\" style=\"padding:24px 28px 28px;\"><a href=\"https://ai-support-ticket-system-lac.vercel.app\" style=\"display:inline-block;background-color:#6366f1;color:#ffffff;text-decoration:none;padding:14px 40px;font-size:15px;font-weight:bold;\">Ver Dashboard Completo</a></td></tr><!-- FOOTER --><tr><td bgcolor=\"#1e293b\" align=\"center\" style=\"padding:18px 32px;\"><p style=\"margin:0;font-size:12px;color:#64748b;\">AuraSupport &middot; Reporte Automatico Diario &middot; Sistema de Soporte con IA</p></td></tr></table></td></tr></table></body></html>",
         "options": {
           "appendAttribution": false
         }
       },
-      "id": "5",
+      "id": "7",
       "name": "Enviar Reporte Email",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [1200, 300],
+      "position": [1680, 300],
       "credentials": {
         "gmailOAuth2": {
           "id": "YOUR_GMAIL_CREDENTIAL_ID",
@@ -108,48 +130,22 @@
   ],
   "connections": {
     "Trigger Diario 8am": {
-      "main": [
-        [
-          {
-            "node": "Obtener Tickets Abiertos",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Tickets Abiertos", "type": "main", "index": 0 }]]
     },
-    "Obtener Tickets Abiertos": {
-      "main": [
-        [
-          {
-            "node": "Obtener Tickets Resueltos",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Tickets Abiertos": {
+      "main": [[{ "node": "Tickets En Progreso", "type": "main", "index": 0 }]]
     },
-    "Obtener Tickets Resueltos": {
-      "main": [
-        [
-          {
-            "node": "Calcular Metricas",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Tickets En Progreso": {
+      "main": [[{ "node": "Tickets Resueltos", "type": "main", "index": 0 }]]
+    },
+    "Tickets Resueltos": {
+      "main": [[{ "node": "Tickets Cerrados", "type": "main", "index": 0 }]]
+    },
+    "Tickets Cerrados": {
+      "main": [[{ "node": "Calcular Metricas", "type": "main", "index": 0 }]]
     },
     "Calcular Metricas": {
-      "main": [
-        [
-          {
-            "node": "Enviar Reporte Email",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Enviar Reporte Email", "type": "main", "index": 0 }]]
     }
   },
   "pinData": {},
@@ -161,5 +157,5 @@
   "tags": [],
   "triggerCount": 1,
   "updatedAt": "2025-01-01T00:00:00.000Z",
-  "versionId": "2"
+  "versionId": "4"
 }

@@ -20,7 +20,7 @@ export default async function MetricsPage() {
   const { data: profile } = await supabase
     .from('profiles').select('role').eq('id', user.id).single();
 
-  if (profile?.role !== 'admin') redirect('/');
+  if (profile?.role !== 'admin') redirect('/dashboard');
 
   // ── Queries en paralelo ───────────────────────────────────────────────────
   const [
@@ -103,7 +103,7 @@ export default async function MetricsPage() {
           </h1>
           <p className="text-slate-400 mt-1">Visión general del sistema de soporte — solo Admin</p>
         </div>
-        <Link href="/">
+        <Link href="/dashboard">
           <Button variant="outline" className="gap-2">
             <ArrowLeft className="w-4 h-4" /> Dashboard
           </Button>

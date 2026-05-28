@@ -14,7 +14,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/',               label: 'Dashboard',        Icon: LayoutDashboard },
+  { href: '/dashboard',      label: 'Dashboard',        Icon: LayoutDashboard },
   { href: '/tickets',        label: 'Tickets',           Icon: Ticket          },
   { href: '/tickets/new',    label: 'Nuevo Ticket',      Icon: PlusCircle      },
   { href: '/notifications',  label: 'Notificaciones',    Icon: Bell            },

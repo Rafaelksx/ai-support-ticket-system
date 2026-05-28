@@ -61,7 +61,7 @@ export default async function TicketDetailPage({
     return (
       <div className="text-center py-12">
         <p className="text-slate-400 mb-4">No tienes permiso para ver este ticket</p>
-        <Link href="/">
+        <Link href="/dashboard">
           <Button variant="outline">Volver al Dashboard</Button>
         </Link>
       </div>
