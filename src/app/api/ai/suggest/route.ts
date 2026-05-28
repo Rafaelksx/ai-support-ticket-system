@@ -121,9 +121,21 @@ ${discussionHistory}
 
     return NextResponse.json({ success: true, suggestedResponse: validatedData.suggestedResponse });
   } catch (error: any) {
-    console.error('AI suggest response error:', error);
+    console.error('AI suggest error details:', {
+      message: error?.message,
+      status: error?.status,
+      code: error?.code,
+      type: error?.type,
+      cause: error?.cause,
+      stack: error?.stack?.split('\n').slice(0, 5).join('\n'),
+    });
+
+    const detail = error?.error?.message
+      ?? error?.message
+      ?? 'An error occurred during AI suggestion generation';
+
     return NextResponse.json(
-      { error: error.message || 'An error occurred during AI suggestion generation' },
+      { error: detail, type: error?.type ?? 'UNKNOWN', status: error?.status ?? 500 },
       { status: 500 }
     );
   }

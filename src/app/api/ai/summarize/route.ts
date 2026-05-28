@@ -114,9 +114,23 @@ ${discussionHistory}
 
     return NextResponse.json({ success: true, summary: validatedData.summary });
   } catch (error: any) {
-    console.error('AI summarize error:', error);
+    // Log full error details for debugging
+    console.error('AI summarize error details:', {
+      message: error?.message,
+      status: error?.status,
+      code: error?.code,
+      type: error?.type,
+      cause: error?.cause,
+      stack: error?.stack?.split('\n').slice(0, 5).join('\n'),
+    });
+
+    // Surface the real error message so we can diagnose it
+    const detail = error?.error?.message   // Gemini/OpenAI SDK error payload
+      ?? error?.message
+      ?? 'An error occurred during AI summary generation';
+
     return NextResponse.json(
-      { error: error.message || 'An error occurred during AI summary generation' },
+      { error: detail, type: error?.type ?? 'UNKNOWN', status: error?.status ?? 500 },
       { status: 500 }
     );
   }
