@@ -4,6 +4,7 @@ import { openai } from '@/lib/ai/openai';
 import { PROMPTS } from '@/lib/ai/prompts';
 import { aiSuggestResponseSchema } from '@/lib/ai/schemas';
 import { logAIRequest } from '@/lib/ai/logger';
+import { parseAIJson } from '@/lib/ai/utils';
 
 export async function POST(request: Request) {
   const startTime = Date.now();
@@ -92,8 +93,8 @@ ${discussionHistory}
     });
 
     const latencyMs = Date.now() - startTime;
-    const aiText = response.choices[0].message.content || '{}';
-    const parsedData = JSON.parse(aiText);
+    const aiText = response.choices[0].message.content;
+    const parsedData = parseAIJson(aiText);
 
     // 4. Validate output with Zod
     const validatedData = aiSuggestResponseSchema.parse(parsedData);

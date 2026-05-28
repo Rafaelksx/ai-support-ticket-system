@@ -4,6 +4,7 @@ import { openai } from '@/lib/ai/openai';
 import { PROMPTS } from '@/lib/ai/prompts';
 import { aiClassifySchema } from '@/lib/ai/schemas';
 import { logAIRequest } from '@/lib/ai/logger';
+import { parseAIJson } from '@/lib/ai/utils';
 
 export async function POST(request: Request) {
   const startTime = Date.now();
@@ -57,8 +58,8 @@ Creado por: ${ticket.profiles?.full_name || 'Desconocido'}
     });
 
     const latencyMs = Date.now() - startTime;
-    const aiText = response.choices[0].message.content || '{}';
-    const parsedData = JSON.parse(aiText);
+    const aiText = response.choices[0].message.content;
+    const parsedData = parseAIJson(aiText);
 
     // 4. Validate output with Zod
     const validatedData = aiClassifySchema.parse(parsedData);
@@ -100,7 +101,10 @@ Creado por: ${ticket.profiles?.full_name || 'Desconocido'}
       // Execute non-blocking webhook request
       fetch(n8nWebhookUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Webhook-Secret': process.env.N8N_WEBHOOK_SECRET || '',
+        },
         body: JSON.stringify({
           event: 'ticket.escalated',
           ticket: {
@@ -114,6 +118,27 @@ Creado por: ${ticket.profiles?.full_name || 'Desconocido'}
           }
         })
       }).catch(err => console.error('Failed to trigger n8n priority webhook:', err));
+    }
+
+    // 8. Automation connection: Trigger n8n webhook for general ticket created notification
+    const n8nWebhookTicketCreated = process.env.N8N_WEBHOOK_TICKET_CREATED;
+    if (n8nWebhookTicketCreated) {
+      fetch(n8nWebhookTicketCreated, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Webhook-Secret': process.env.N8N_WEBHOOK_SECRET || '',
+        },
+        body: JSON.stringify({
+          ticket_id: ticket.id,
+          title: ticket.title,
+          description: ticket.description,
+          priority: validatedData.classification.priority,
+          category: ticket.categories?.name || 'General',
+          user_email: user.email,
+          user_name: ticket.profiles?.full_name || 'Usuario',
+        })
+      }).catch(err => console.error('Failed to trigger n8n ticket created webhook:', err));
     }
 
     return NextResponse.json({ success: true, data: validatedData });

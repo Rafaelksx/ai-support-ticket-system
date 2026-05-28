@@ -6,265 +6,112 @@
         "rule": {
           "interval": [
             {
-              "triggerAtHour": 8,
-              "triggerAtMinute": 0
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
             }
           ]
         }
       },
-      "id": "schedule-trigger",
-      "name": "Trigger Diario 8:00 AM",
+      "id": "1",
+      "name": "Trigger Diario 8am",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [240, 300]
     },
     {
       "parameters": {
-        "url": "={{ $vars.NEXT_PUBLIC_APP_URL }}/api/tickets",
-        "sendHeaders": true,
+        "url": "=https://xpxbgiimpembuvzbonzi.supabase.co/rest/v1/tickets?status=eq.open&select=id,priority,sentiment,assigned_to,created_at",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        },
         "headerParameters": {
           "parameters": [
             {
-              "name": "Authorization",
-              "value": "Bearer {{ $vars.N8N_API_TOKEN }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhweGJnaWltcGVtYnV2emJvbnppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MTA4ODQsImV4cCI6MjA5NTQ4Njg4NH0.EnUgw8Qpp1tgdfAZPLb33JYSB6_xqcVrqVB1V3zYnKw"
             }
           ]
-        },
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "status",
-              "value": "open"
-            },
-            {
-              "name": "limit",
-              "value": "100"
-            }
-          ]
-        },
-        "options": {
-          "timeout": 10000
         }
       },
-      "id": "get-open-tickets",
+      "id": "2",
       "name": "Obtener Tickets Abiertos",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [480, 200]
+      "position": [480, 300]
     },
     {
       "parameters": {
-        "url": "={{ $vars.NEXT_PUBLIC_APP_URL }}/api/tickets",
-        "sendHeaders": true,
+        "url": "=https://xpxbgiimpembuvzbonzi.supabase.co/rest/v1/tickets?status=eq.resolved&select=id,priority,sentiment,created_at,updated_at",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        },
         "headerParameters": {
           "parameters": [
             {
-              "name": "Authorization",
-              "value": "Bearer {{ $vars.N8N_API_TOKEN }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhweGJnaWltcGVtYnV2emJvbnppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MTA4ODQsImV4cCI6MjA5NTQ4Njg4NH0.EnUgw8Qpp1tgdfAZPLb33JYSB6_xqcVrqVB1V3zYnKw"
             }
           ]
-        },
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "status",
-              "value": "resolved"
-            },
-            {
-              "name": "limit",
-              "value": "100"
-            }
-          ]
-        },
-        "options": {
-          "timeout": 10000
         }
       },
-      "id": "get-resolved-tickets",
+      "id": "3",
       "name": "Obtener Tickets Resueltos",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [480, 400]
+      "position": [720, 300]
     },
     {
       "parameters": {
-        "url": "={{ $vars.NEXT_PUBLIC_APP_URL }}/api/tickets",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer {{ $vars.N8N_API_TOKEN }}"
-            }
-          ]
-        },
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "priority",
-              "value": "critical"
-            },
-            {
-              "name": "status",
-              "value": "open"
-            },
-            {
-              "name": "limit",
-              "value": "50"
-            }
-          ]
-        },
-        "options": {
-          "timeout": 10000
-        }
+        "jsCode": "// Get data from previous nodes\nconst openTicketsRaw = $('Obtener Tickets Abiertos').all();\nconst resolvedTicketsRaw = $('Obtener Tickets Resueltos').all();\n\n// Flatten: each HTTP node returns items, each item.json may be a ticket or an array\nlet openTickets = [];\nfor (const item of openTicketsRaw) {\n  if (Array.isArray(item.json)) {\n    openTickets = openTickets.concat(item.json);\n  } else if (item.json && item.json.id) {\n    openTickets.push(item.json);\n  }\n}\n\nlet resolvedTickets = [];\nfor (const item of resolvedTicketsRaw) {\n  if (Array.isArray(item.json)) {\n    resolvedTickets = resolvedTickets.concat(item.json);\n  } else if (item.json && item.json.id) {\n    resolvedTickets.push(item.json);\n  }\n}\n\nconst totalOpen = openTickets.length;\nconst totalResolved = resolvedTickets.length;\nconst totalAll = totalOpen + totalResolved;\n\n// Count by priority\nconst byPriority = { critical: 0, high: 0, medium: 0, low: 0 };\nfor (const t of openTickets) {\n  const p = t.priority || 'medium';\n  if (byPriority[p] !== undefined) byPriority[p]++;\n}\n\n// Count critical (open)\nconst totalCritical = byPriority.critical + byPriority.high;\n\n// Count unassigned\nconst unassigned = openTickets.filter(t => !t.assigned_to).length;\n\n// Count overdue (open > 24h)\nconst now = new Date();\nconst overdue = openTickets.filter(t => {\n  const created = new Date(t.created_at);\n  return (now - created) > 24 * 60 * 60 * 1000;\n}).length;\n\n// Sentiment counts from open tickets\nconst bySentiment = { angry: 0, negative: 0, neutral: 0, positive: 0 };\nfor (const t of openTickets) {\n  const s = t.sentiment || 'neutral';\n  if (bySentiment[s] !== undefined) bySentiment[s]++;\n}\n\n// Resolution rate\nconst resolutionRate = totalAll > 0 ? Math.round((totalResolved / totalAll) * 100) : 0;\n\nconst today = new Date().toLocaleDateString('es-ES', {\n  weekday: 'long',\n  year: 'numeric',\n  month: 'long',\n  day: 'numeric',\n  timeZone: 'America/New_York'\n});\n\nreturn [{\n  json: {\n    date: today,\n    total_open: totalOpen,\n    total_resolved: totalResolved,\n    total_critical: totalCritical,\n    resolution_rate: resolutionRate,\n    unassigned: unassigned,\n    overdue_tickets: overdue,\n    by_priority: byPriority,\n    by_sentiment: bySentiment\n  }\n}];"
       },
-      "id": "get-critical-tickets",
-      "name": "Obtener Tickets Críticos",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [480, 600]
-    },
-    {
-      "parameters": {
-        "jsCode": "// Recopilar datos de los tres nodos anteriores.const openData = $('Obtener Tickets Abiertos').first().json;.const resolvedData = $('Obtener Tickets Resueltos').first().json;.const criticalData = $('Obtener Tickets Críticos').first().json;..const openTickets = openData?.data?.tickets || [];.const resolvedTickets = resolvedData?.data?.tickets || [];.const criticalTickets = criticalData?.data?.tickets || [];..// Métricas.const totalOpen = openData?.data?.pagination?.total || openTickets.length;.const totalResolved = resolvedData?.data?.pagination?.total || resolvedTickets.length;.const totalCritical = criticalData?.data?.pagination?.total || criticalTickets.length;..// Distribución por prioridad (tickets abiertos).const byPriority = { low: 0, medium: 0, high: 0, critical: 0 };.for (const t of openTickets) {.  if (byPriority[t.priority] !== undefined) byPriority[t.priority]++;.}..// Distribución por sentimiento.const bySentiment = { positive: 0, neutral: 0, negative: 0, angry: 0 };.for (const t of openTickets) {.  if (t.ai_sentiment && bySentiment[t.ai_sentiment] !== undefined) {.    bySentiment[t.ai_sentiment]++;.  }.}..// Tickets sin asignar.const unassigned = openTickets.filter(t => !t.assigned_to).length;..// Top 5 tickets críticos o de alta prioridad.const topUrgent = [...openTickets].  .filter(t => t.priority === 'critical' || t.priority === 'high').  .sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).  .slice(0, 5);..// Fecha de hoy.const today = new Date();.const dateStr = today.toLocaleDateString('es-ES', {.  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'.});..// SLA simple: tickets abiertos > 24h.const overdueTickets = openTickets.filter(t => {.  const created = new Date(t.created_at);.  const diffHours = (today - created) / (1000 * 60 * 60);.  return diffHours > 24;.}).length;..return [{.  json: {.    date: dateStr,.    total_open: totalOpen,.    total_resolved: totalResolved,.    total_critical: totalCritical,.    unassigned: unassigned,.    overdue_tickets: overdueTickets,.    resolution_rate: totalResolved > 0 ? Math.round((totalResolved / (totalOpen + totalResolved)) * 100) : 0,.    by_priority: byPriority,.    by_sentiment: bySentiment,.    top_urgent: topUrgent,.    app_url: $env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'.  }.}];"
-      },
-      "id": "compute-metrics",
-      "name": "Calcular Métricas",
+      "id": "4",
+      "name": "Calcular Metricas",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [720, 400]
+      "position": [960, 300]
     },
     {
       "parameters": {
-        "sendTo": "={{ $vars.REPORT_EMAIL || 'admin@company.com' }}",
-        "subject": "📊 Reporte Diario de Soporte - {{ $json.date }}",
+        "sendTo": "=rafaelkstro@gmail.com",
+        "subject": "=📊 Reporte Diario de Soporte - {{ $json.date }}",
         "emailType": "html",
-        "message": "<!DOCTYPE html>.<html lang=.es.>.<head>.  <meta charset=.UTF-8.>.  <title>Reporte Diario</title>.</head>.<body style=.margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;.>.  <table width=.100%. cellpadding=.0. cellspacing=.0. style=.background:#f0f2f5;padding:40px 20px;.>.    <tr>.      <td align=.center.>.        <table width=.660. cellpadding=.0. cellspacing=.0. style=.background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);.>..          <!-- Header -->.          <tr>.            <td style=.background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#334155 100%);padding:40px;text-align:center;.>.              <h1 style=.color:#fff;margin:0 0 4px;font-size:26px;font-weight:700;.>📊 Reporte Diario</h1>.              <p style=.color:#94a3b8;margin:0;font-size:14px;.>{{ $json.date }}</p>.              <div style=.margin-top:16px;display:inline-block;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.4);border-radius:20px;padding:4px 16px;.>.                <span style=.color:#a5b4fc;font-size:13px;font-weight:600;.>AuraSupport · Sistema de Soporte con IA</span>.              </div>.            </td>.          </tr>..          <!-- KPI Cards -->.          <tr>.            <td style=.padding:32px 40px 0;.>.              <h2 style=.color:#1e293b;font-size:16px;margin:0 0 16px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;.>📈 Métricas Clave</h2>.              <table width=.100%. cellpadding=.0. cellspacing=.8.>.                <tr>.                  <td width=.25%. style=.padding:4px;.>.                    <table width=.100%. cellpadding=.0. cellspacing=.0. style=.background:#eff6ff;border-radius:10px;border:1px solid #bfdbfe;.>.                      <tr>.                        <td style=.padding:16px;text-align:center;.>.                          <div style=.font-size:28px;font-weight:800;color:#1d4ed8;.>{{ $json.total_open }}</div>.                          <div style=.font-size:11px;color:#64748b;text-transform:uppercase;font-weight:600;margin-top:4px;.>Abiertos</div>.                        </td>.                      </tr>.                    </table>.                  </td>.                  <td width=.25%. style=.padding:4px;.>.                    <table width=.100%. cellpadding=.0. cellspacing=.0. style=.background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;.>.                      <tr>.                        <td style=.padding:16px;text-align:center;.>.                          <div style=.font-size:28px;font-weight:800;color:#15803d;.>{{ $json.total_resolved }}</div>.                          <div style=.font-size:11px;color:#64748b;text-transform:uppercase;font-weight:600;margin-top:4px;.>Resueltos</div>.                        </td>.                      </tr>.                    </table>.                  </td>.                  <td width=.25%. style=.padding:4px;.>.                    <table width=.100%. cellpadding=.0. cellspacing=.0. style=.background:#fef2f2;border-radius:10px;border:1px solid #fecaca;.>.                      <tr>.                        <td style=.padding:16px;text-align:center;.>.                          <div style=.font-size:28px;font-weight:800;color:#dc2626;.>{{ $json.total_critical }}</div>.                          <div style=.font-size:11px;color:#64748b;text-transform:uppercase;font-weight:600;margin-top:4px;.>Críticos</div>.                        </td>.                      </tr>.                    </table>.                  </td>.                  <td width=.25%. style=.padding:4px;.>.                    <table width=.100%. cellpadding=.0. cellspacing=.0. style=.background:#f5f3ff;border-radius:10px;border:1px solid #ddd6fe;.>.                      <tr>.                        <td style=.padding:16px;text-align:center;.>.                          <div style=.font-size:28px;font-weight:800;color:#7c3aed;.>{{ $json.resolution_rate }}%</div>.                          <div style=.font-size:11px;color:#64748b;text-transform:uppercase;font-weight:600;margin-top:4px;.>Resolución</div>.                        </td>.                      </tr>.                    </table>.                  </td>.                </tr>.              </table>..              <!-- Alertas -->.              {{ $json.unassigned > 0 || $json.overdue_tickets > 0 ? `.              <table width=.100%. cellpadding=.0. cellspacing=.0. style=.background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;margin-top:16px;.>.                <tr><td style=.padding:14px 18px;.>.                  <strong style=.color:#92400e;.>⚠️ Alertas del día:</strong>.                  <ul style=.margin:6px 0 0;padding-left:20px;color:#78350f;font-size:13px;.>.                    ${$json.unassigned > 0 ? `<li>${$json.unassigned} ticket(s) sin asignar</li>` : ''}.                    ${$json.overdue_tickets > 0 ? `<li>${$json.overdue_tickets} ticket(s) con más de 24h sin resolución</li>` : ''}.                  </ul>.                </td></tr>.              </table>` : '' }}.            </td>.          </tr>..          <!-- Distribución por Prioridad -->.          <tr>.            <td style=.padding:24px 40px 0;.>.              <h2 style=.color:#1e293b;font-size:16px;margin:0 0 12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;.>🎯 Distribución por Prioridad</h2>.              <table width=.100%. cellpadding=.0. cellspacing=.0. style=.border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;.>.                <tr style=.background:#f8fafc;.>.                  <th style=.padding:10px 16px;text-align:left;font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;.>Prioridad</th>.                  <th style=.padding:10px 16px;text-align:center;font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;.>Tickets</th>.                  <th style=.padding:10px 16px;text-align:left;font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;.>Barra</th>.                </tr>.                <tr style=.border-top:1px solid #e2e8f0;.>.                  <td style=.padding:10px 16px;font-size:13px;font-weight:600;color:#dc2626;.>🔴 Crítico</td>.                  <td style=.padding:10px 16px;text-align:center;font-size:13px;font-weight:700;color:#dc2626;.>{{ $json.by_priority.critical }}</td>.                  <td style=.padding:10px 16px;.><div style=.background:#dc2626;height:8px;border-radius:4px;width:{{ Math.min(($json.by_priority.critical / Math.max($json.total_open, 1)) * 200, 200) }}px;.></div></td>.                </tr>.                <tr style=.border-top:1px solid #e2e8f0;background:#fafafa;.>.                  <td style=.padding:10px 16px;font-size:13px;font-weight:600;color:#d97706;.>🟠 Alta</td>.                  <td style=.padding:10px 16px;text-align:center;font-size:13px;font-weight:700;color:#d97706;.>{{ $json.by_priority.high }}</td>.                  <td style=.padding:10px 16px;.><div style=.background:#f59e0b;height:8px;border-radius:4px;width:{{ Math.min(($json.by_priority.high / Math.max($json.total_open, 1)) * 200, 200) }}px;.></div></td>.                </tr>.                <tr style=.border-top:1px solid #e2e8f0;.>.                  <td style=.padding:10px 16px;font-size:13px;font-weight:600;color:#2563eb;.>🔵 Media</td>.                  <td style=.padding:10px 16px;text-align:center;font-size:13px;font-weight:700;color:#2563eb;.>{{ $json.by_priority.medium }}</td>.                  <td style=.padding:10px 16px;.><div style=.background:#3b82f6;height:8px;border-radius:4px;width:{{ Math.min(($json.by_priority.medium / Math.max($json.total_open, 1)) * 200, 200) }}px;.></div></td>.                </tr>.                <tr style=.border-top:1px solid #e2e8f0;background:#fafafa;.>.                  <td style=.padding:10px 16px;font-size:13px;font-weight:600;color:#16a34a;.>🟢 Baja</td>.                  <td style=.padding:10px 16px;text-align:center;font-size:13px;font-weight:700;color:#16a34a;.>{{ $json.by_priority.low }}</td>.                  <td style=.padding:10px 16px;.><div style=.background:#22c55e;height:8px;border-radius:4px;width:{{ Math.min(($json.by_priority.low / Math.max($json.total_open, 1)) * 200, 200) }}px;.></div></td>.                </tr>.              </table>.            </td>.          </tr>..          <!-- Sentimiento -->.          <tr>.            <td style=.padding:24px 40px 0;.>.              <h2 style=.color:#1e293b;font-size:16px;margin:0 0 12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;.>💬 Análisis de Sentimiento (IA)</h2>.              <table width=.100%. cellpadding=.8. cellspacing=.0. style=.border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;.>.                <tr style=.background:#f8fafc;.>.                  <td style=.font-size:13px;font-weight:600;color:#dc2626;.>😡 Enojado: <strong>{{ $json.by_sentiment.angry }}</strong></td>.                  <td style=.font-size:13px;font-weight:600;color:#f97316;.>😞 Negativo: <strong>{{ $json.by_sentiment.negative }}</strong></td>.                  <td style=.font-size:13px;font-weight:600;color:#64748b;.>😐 Neutro: <strong>{{ $json.by_sentiment.neutral }}</strong></td>.                  <td style=.font-size:13px;font-weight:600;color:#16a34a;.>😊 Positivo: <strong>{{ $json.by_sentiment.positive }}</strong></td>.                </tr>.              </table>.            </td>.          </tr>..          <!-- CTA -->.          <tr>.            <td style=.padding:28px 40px;text-align:center;.>.              <a href=.{{ $json.app_url }}/dashboard. style=.display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:15px;font-weight:600;.>📊 Ver Dashboard Completo</a>.            </td>.          </tr>..          <!-- Footer -->.          <tr>.            <td style=.background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;text-align:center;.>.              <p style=.color:#94a3b8;font-size:12px;margin:0;.>© {{ new Date().getFullYear() }} AuraSupport · Reporte Automático Diario · 8:00 AM</p>.            </td>.          </tr>..        </table>.      </td>.    </tr>.  </table>.</body>.</html>",
+        "message": "",
+        "html": "<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"></head><body style=\"margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background-color:#f0f2f5;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#f0f2f5;padding:40px 20px;\"><tr><td align=\"center\"><table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);\"><tr><td style=\"background:linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%);padding:36px 40px;text-align:center;\"><h1 style=\"color:#fff;margin:0;font-size:24px;font-weight:700;\">📊 Reporte Diario</h1><p style=\"color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:14px;\">{{ $json.date }}</p></td></tr><tr><td style=\"padding:36px 40px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin-bottom:24px;\"><tr><td width=\"25%\" align=\"center\" style=\"padding:8px;\"><div style=\"background:#eff6ff;border-radius:12px;padding:16px 8px;\"><div style=\"font-size:28px;font-weight:700;color:#2563eb;\">{{ $json.total_open }}</div><div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;\">Abiertos</div></div></td><td width=\"25%\" align=\"center\" style=\"padding:8px;\"><div style=\"background:#f0fdf4;border-radius:12px;padding:16px 8px;\"><div style=\"font-size:28px;font-weight:700;color:#16a34a;\">{{ $json.total_resolved }}</div><div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;\">Resueltos</div></div></td><td width=\"25%\" align=\"center\" style=\"padding:8px;\"><div style=\"background:#fef2f2;border-radius:12px;padding:16px 8px;\"><div style=\"font-size:28px;font-weight:700;color:#dc2626;\">{{ $json.total_critical }}</div><div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;\">Urgentes</div></div></td><td width=\"25%\" align=\"center\" style=\"padding:8px;\"><div style=\"background:#faf5ff;border-radius:12px;padding:16px 8px;\"><div style=\"font-size:28px;font-weight:700;color:#7c3aed;\">{{ $json.resolution_rate }}%</div><div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;\">Resolucion</div></div></td></tr></table><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:24px;\"><tr><td style=\"padding:20px 24px;\"><h3 style=\"color:#1e293b;margin:0 0 16px;font-size:15px;\">🎯 Distribución por Prioridad</h3><table width=\"100%\" cellpadding=\"4\" cellspacing=\"0\"><tr><td style=\"color:#64748b;font-size:13px;\">🔴 Crítico</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_priority.critical }}</td></tr><tr><td style=\"color:#64748b;font-size:13px;\">🟠 Alta</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_priority.high }}</td></tr><tr><td style=\"color:#64748b;font-size:13px;\">🔵 Media</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_priority.medium }}</td></tr><tr><td style=\"color:#64748b;font-size:13px;\">🟢 Baja</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_priority.low }}</td></tr></table></td></tr></table><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:24px;\"><tr><td style=\"padding:20px 24px;\"><h3 style=\"color:#1e293b;margin:0 0 16px;font-size:15px;\">💬 Sentimiento del Usuario</h3><table width=\"100%\" cellpadding=\"4\" cellspacing=\"0\"><tr><td style=\"color:#64748b;font-size:13px;\">😡 Enojado</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_sentiment.angry }}</td></tr><tr><td style=\"color:#64748b;font-size:13px;\">😞 Negativo</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_sentiment.negative }}</td></tr><tr><td style=\"color:#64748b;font-size:13px;\">😐 Neutro</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_sentiment.neutral }}</td></tr><tr><td style=\"color:#64748b;font-size:13px;\">😊 Positivo</td><td align=\"right\" style=\"font-weight:700;color:#1e293b;font-size:13px;\">{{ $json.by_sentiment.positive }}</td></tr></table></td></tr></table><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#fff7ed;border-radius:12px;border:1px solid #fed7aa;margin-bottom:24px;\"><tr><td style=\"padding:16px 24px;\"><h3 style=\"color:#c2410c;margin:0 0 8px;font-size:14px;\">⚠️ Alertas</h3><p style=\"color:#475569;font-size:13px;margin:0;line-height:1.6;\">{{ $json.unassigned }} ticket(s) sin asignar · {{ $json.overdue_tickets }} ticket(s) con mas de 24h abiertos</p></td></tr></table><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\"><a href=\"https://ai-support-ticket-system-lac.vercel.app\" style=\"display:inline-block;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;text-decoration:none;padding:14px 36px;border-radius:10px;font-size:15px;font-weight:600;\">📋 Ir al Dashboard</a></td></tr></table></td></tr><tr><td style=\"background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;text-align:center;\"><p style=\"color:#94a3b8;font-size:12px;margin:0;\">© 2025 AuraSupport · Reporte Automatico Diario</p></td></tr></table></td></tr></table></body></html>",
         "options": {
           "appendAttribution": false
         }
       },
-      "id": "send-report-email",
-      "name": "Enviar Reporte por Email",
+      "id": "5",
+      "name": "Enviar Reporte Email",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [960, 300],
+      "position": [1200, 300],
       "credentials": {
         "gmailOAuth2": {
-          "id": "gmail-credentials",
-          "name": "Gmail AuraSupport"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "channel": "#support-reports",
-        "text": "📊 *Reporte Diario de Soporte - {{ $('Calcular Métricas').first().json.date }}*",
-        "otherOptions": {
-          "mrkdwn": true,
-          "blocks": [
-            {
-              "type": "header",
-              "text": {
-                "type": "plain_text",
-                "text": "📊 Reporte Diario AuraSupport",
-                "emoji": true
-              }
-            },
-            {
-              "type": "section",
-              "text": {
-                "type": "mrkdwn",
-                "text": "Resumen del {{ $('Calcular Métricas').first().json.date }}"
-              }
-            },
-            {
-              "type": "section",
-              "fields": [
-                {
-                  "type": "mrkdwn",
-                  "text": "*📬 Tickets Abiertos:*.{{ $('Calcular Métricas').first().json.total_open }}"
-                },
-                {
-                  "type": "mrkdwn",
-                  "text": "*✅ Tickets Resueltos:*.{{ $('Calcular Métricas').first().json.total_resolved }}"
-                },
-                {
-                  "type": "mrkdwn",
-                  "text": "*🔴 Críticos Activos:*.{{ $('Calcular Métricas').first().json.total_critical }}"
-                },
-                {
-                  "type": "mrkdwn",
-                  "text": "*📈 Tasa de Resolución:*.{{ $('Calcular Métricas').first().json.resolution_rate }}%"
-                },
-                {
-                  "type": "mrkdwn",
-                  "text": "*👤 Sin Asignar:*.{{ $('Calcular Métricas').first().json.unassigned }}"
-                },
-                {
-                  "type": "mrkdwn",
-                  "text": "*⏰ Con +24h pendientes:*.{{ $('Calcular Métricas').first().json.overdue_tickets }}"
-                }
-              ]
-            },
-            {
-              "type": "actions",
-              "elements": [
-                {
-                  "type": "button",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "📊 Ver Dashboard",
-                    "emoji": true
-                  },
-                  "style": "primary",
-                  "url": "{{ $('Calcular Métricas').first().json.app_url }}/dashboard"
-                }
-              ]
-            }
-          ]
-        }
-      },
-      "id": "slack-daily-report",
-      "name": "Publicar en Slack",
-      "type": "n8n-nodes-base.slack",
-      "typeVersion": 2.2,
-      "position": [960, 500],
-      "credentials": {
-        "slackApi": {
-          "id": "slack-credentials",
-          "name": "Slack AuraSupport"
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail"
         }
       }
     }
   ],
   "connections": {
-    "Trigger Diario 8:00 AM": {
+    "Trigger Diario 8am": {
       "main": [
         [
           {
             "node": "Obtener Tickets Abiertos",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Obtener Tickets Resueltos",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Obtener Tickets Críticos",
             "type": "main",
             "index": 0
           }
@@ -275,7 +122,7 @@
       "main": [
         [
           {
-            "node": "Calcular Métricas",
+            "node": "Obtener Tickets Resueltos",
             "type": "main",
             "index": 0
           }
@@ -286,34 +133,18 @@
       "main": [
         [
           {
-            "node": "Calcular Métricas",
+            "node": "Calcular Metricas",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Obtener Tickets Críticos": {
+    "Calcular Metricas": {
       "main": [
         [
           {
-            "node": "Calcular Métricas",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Calcular Métricas": {
-      "main": [
-        [
-          {
-            "node": "Enviar Reporte por Email",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Publicar en Slack",
+            "node": "Enviar Reporte Email",
             "type": "main",
             "index": 0
           }
@@ -324,21 +155,11 @@
   "pinData": {},
   "settings": {
     "executionOrder": "v1",
-    "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner",
-    "errorWorkflow": ""
+    "saveManualExecutions": true
   },
   "staticData": null,
-  "tags": [
-    {
-      "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z",
-      "id": "tag-aura-support",
-      "name": "AuraSupport"
-    }
-  ],
-  "triggerCount": 0,
-  "updatedAt": "2024-01-01T00:00:00.000Z",
-  "versionId": "1"
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "versionId": "2"
 }
-

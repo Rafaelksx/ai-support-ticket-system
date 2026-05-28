@@ -1,156 +1,95 @@
 {
-  "name": "Ticket Creado - Email de Confirmación",
+  "name": "Ticket Creado - Email Confirmación",
   "nodes": [
     {
       "parameters": {
         "httpMethod": "POST",
         "path": "ticket-created",
-        "responseMode": "responseNode",
         "options": {}
       },
-      "id": "webhook-trigger",
-      "name": "Recibir Webhook",
+      "id": "1",
+      "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [240, 300],
-      "webhookId": "ticket-created-webhook"
+      "webhookId": "ticket-created"
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "secret-check",
-              "leftValue": "={{ $json.headers['x-webhook-secret'] }}",
-              "rightValue": "={{ $vars.N8N_WEBHOOK_SECRET }}",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
+        "jsCode": "const body = $input.first().json.body;\n\nconst priorityLabels = {\n  critical: '🔴 Crítico',\n  high: '🟠 Alta',\n  medium: '🔵 Media',\n  low: '🟢 Baja'\n};\n\nreturn [{\n  json: {\n    ticket_id: body.ticket_id || 'N/A',\n    ticket_short: (body.ticket_id || 'N/A').substring(0, 8),\n    title: body.title || 'Sin título',\n    description: (body.description || '').substring(0, 200),\n    priority: body.priority || 'medium',\n    priority_label: priorityLabels[body.priority] || '🔵 Media',\n    category: body.category || 'General',\n    user_email: body.user_email || '',\n    user_name: body.user_name || 'Usuario',\n    created_at: new Date().toLocaleString('es-ES', { timeZone: 'America/New_York' }),\n    app_url: 'https://ai-support-ticket-system-lac.vercel.app'\n  }\n}];"
       },
-      "id": "validate-secret",
-      "name": "Validar Secret",
-      "type": "n8n-nodes-base.if",
+      "id": "2",
+      "name": "Preparar Datos",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [480, 300]
     },
     {
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "={ .error.: .Unauthorized., .message.: .Invalid webhook secret. }",
-        "options": {
-          "responseCode": 401
-        }
-      },
-      "id": "unauthorized-response",
-      "name": "Respuesta No Autorizada",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1,
-      "position": [480, 500]
-    },
-    {
-      "parameters": {
-        "jsCode": "const body = $input.first().json.body;..return [{.  json: {.    ticket_id: body.ticket_id || 'N/A',.    title: body.title || 'Sin título',.    description: body.description || '',.    priority: body.priority || 'medium',.    category: body.category || 'General',.    user_email: body.user_email || '',.    user_name: body.user_name || 'Usuario',.    created_at: new Date().toISOString(),.    app_url: $vars.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'.  }.}];"
-      },
-      "id": "parse-payload",
-      "name": "Parsear Payload",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [720, 300]
-    },
-    {
-      "parameters": {
         "sendTo": "={{ $json.user_email }}",
-        "subject": "✅ Tu ticket #{{ $json.ticket_id.substring(0, 8) }} ha sido creado - AuraSupport",
+        "subject": "=✅ Tu ticket #{{ $json.ticket_short }} ha sido creado - AuraSupport",
         "emailType": "html",
-        "message": "<!DOCTYPE html>.<html lang=.es.>.<head>.  <meta charset=.UTF-8.>.  <meta name=.viewport. content=.width=device-width, initial-scale=1.0.>.  <title>Ticket Creado</title>.</head>.<body style=.margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background-color:#f4f6f9;.>.  <table width=.100%. cellpadding=.0. cellspacing=.0. style=.background-color:#f4f6f9;padding:40px 20px;.>.    <tr>.      <td align=.center.>.        <table width=.600. cellpadding=.0. cellspacing=.0. style=.background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);.>.          <!-- Header -->.          <tr>.            <td style=.background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);padding:40px 40px 30px;text-align:center;.>.              <h1 style=.color:#ffffff;margin:0;font-size:28px;font-weight:700;letter-spacing:-0.5px;.>🎫 AuraSupport</h1>.              <p style=.color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:15px;.>Sistema de Soporte Inteligente</p>.            </td>.          </tr>.          <!-- Body -->.          <tr>.            <td style=.padding:40px;.>.              <h2 style=.color:#1e293b;margin:0 0 8px;font-size:22px;.>¡Tu ticket ha sido recibido!</h2>.              <p style=.color:#64748b;margin:0 0 28px;font-size:15px;line-height:1.6;.>Hola <strong>{{ $json.user_name }}</strong>, hemos recibido tu solicitud de soporte y nuestro equipo la revisará pronto.</p>..              <!-- Ticket Card -->.              <table width=.100%. cellpadding=.0. cellspacing=.0. style=.background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:28px;.>.                <tr>.                  <td style=.padding:24px;.>.                    <table width=.100%. cellpadding=.0. cellspacing=.0.>.                      <tr>.                        <td style=.padding:6px 0;.>.                          <span style=.color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;font-weight:600;.>ID del Ticket</span><br>.                          <span style=.color:#1e293b;font-size:14px;font-weight:600;font-family:monospace;.>#{{ $json.ticket_id.substring(0, 8) }}</span>.                        </td>.                        <td style=.padding:6px 0;. align=.right.>.                          <span style=.background:{{ $json.priority === 'critical' ? '#fee2e2' : $json.priority === 'high' ? '#fef3c7' : $json.priority === 'medium' ? '#dbeafe' : '#dcfce7' }};color:{{ $json.priority === 'critical' ? '#dc2626' : $json.priority === 'high' ? '#d97706' : $json.priority === 'medium' ? '#2563eb' : '#16a34a' }};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;text-transform:uppercase;.>{{ $json.priority }}</span>.                        </td>.                      </tr>.                      <tr>.                        <td colspan=.2. style=.padding:16px 0 6px;border-top:1px solid #e2e8f0;.>.                          <span style=.color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;font-weight:600;.>Título</span><br>.                          <span style=.color:#1e293b;font-size:15px;font-weight:500;.>{{ $json.title }}</span>.                        </td>.                      </tr>.                      <tr>.                        <td colspan=.2. style=.padding:12px 0 6px;.>.                          <span style=.color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;font-weight:600;.>Categoría</span><br>.                          <span style=.color:#1e293b;font-size:14px;.>{{ $json.category }}</span>.                        </td>.                      </tr>.                      <tr>.                        <td colspan=.2. style=.padding:12px 0 6px;.>.                          <span style=.color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;font-weight:600;.>Fecha de creación</span><br>.                          <span style=.color:#1e293b;font-size:14px;.>{{ $json.created_at }}</span>.                        </td>.                      </tr>.                    </table>.                  </td>.                </tr>.              </table>..              <!-- CTA Button -->.              <table width=.100%. cellpadding=.0. cellspacing=.0.>.                <tr>.                  <td align=.center. style=.padding-bottom:28px;.>.                    <a href=.{{ $json.app_url }}/tickets/{{ $json.ticket_id }}. style=.display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;letter-spacing:0.2px;.>📋 Ver mi Ticket</a>.                  </td>.                </tr>.              </table>..              <p style=.color:#94a3b8;font-size:13px;line-height:1.6;margin:0;.>Si no creaste este ticket, puedes ignorar este email. Para cualquier consulta, responde a este correo.</p>.            </td>.          </tr>.          <!-- Footer -->.          <tr>.            <td style=.background:#f8fafc;padding:24px 40px;border-top:1px solid #e2e8f0;text-align:center;.>.              <p style=.color:#94a3b8;font-size:12px;margin:0;.>© {{ new Date().getFullYear() }} AuraSupport · Sistema de Soporte con IA</p>.              <p style=.color:#cbd5e1;font-size:11px;margin:6px 0 0;.>Este es un mensaje automático, por favor no respondas directamente.</p>.            </td>.          </tr>.        </table>.      </td>.    </tr>.  </table>.</body>.</html>",
+        "message": "",
+        "html": "<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"></head><body style=\"margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background-color:#f0f2f5;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#f0f2f5;padding:40px 20px;\"><tr><td align=\"center\"><table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);\"><tr><td style=\"background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 50%,#a78bfa 100%);padding:40px;text-align:center;\"><h1 style=\"color:#fff;margin:0;font-size:26px;font-weight:700;\">🎫 AuraSupport</h1><p style=\"color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:14px;\">Sistema de Soporte Inteligente</p></td></tr><tr><td style=\"padding:36px 40px;\"><h2 style=\"color:#1e293b;margin:0 0 8px;font-size:20px;\">¡Tu ticket ha sido recibido!</h2><p style=\"color:#64748b;margin:0 0 24px;font-size:15px;line-height:1.6;\">Hola <strong>{{ $json.user_name }}</strong>, hemos recibido tu solicitud y nuestro equipo la revisará pronto.</p><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:24px;\"><tr><td style=\"padding:20px 24px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"padding:6px 0;\"><span style=\"color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600;\">ID del Ticket</span><br><span style=\"color:#1e293b;font-size:15px;font-weight:700;font-family:monospace;\">#{{ $json.ticket_short }}</span></td><td style=\"padding:6px 0;\" align=\"right\"><span style=\"background:#dbeafe;color:#2563eb;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;\">{{ $json.priority_label }}</span></td></tr><tr><td colspan=\"2\" style=\"padding:14px 0 6px;border-top:1px solid #e2e8f0;\"><span style=\"color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600;\">Título</span><br><span style=\"color:#1e293b;font-size:15px;font-weight:500;\">{{ $json.title }}</span></td></tr><tr><td style=\"padding:10px 0 6px;\"><span style=\"color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600;\">Categoría</span><br><span style=\"color:#1e293b;font-size:14px;\">{{ $json.category }}</span></td><td style=\"padding:10px 0 6px;\"><span style=\"color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600;\">Fecha</span><br><span style=\"color:#1e293b;font-size:14px;\">{{ $json.created_at }}</span></td></tr></table></td></tr></table><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\" style=\"padding-bottom:24px;\"><a href=\"{{ $json.app_url }}/tickets/{{ $json.ticket_id }}\" style=\"display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;text-decoration:none;padding:14px 36px;border-radius:10px;font-size:15px;font-weight:600;\">📋 Ver mi Ticket</a></td></tr></table><p style=\"color:#94a3b8;font-size:13px;line-height:1.6;margin:0;\">Si no creaste este ticket, puedes ignorar este email.</p></td></tr><tr><td style=\"background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;text-align:center;\"><p style=\"color:#94a3b8;font-size:12px;margin:0;\">© 2025 AuraSupport · Sistema de Soporte con IA</p></td></tr></table></td></tr></table></body></html>",
         "options": {
           "appendAttribution": false
         }
       },
-      "id": "send-email",
-      "name": "Enviar Email de Confirmación",
+      "id": "3",
+      "name": "Enviar Email",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [960, 300],
+      "position": [720, 300],
       "credentials": {
         "gmailOAuth2": {
-          "id": "gmail-credentials",
-          "name": "Gmail AuraSupport"
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail"
         }
       }
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Email enviado correctamente', ticket_id: $('Parsear Payload').first().json.ticket_id }) }}",
+        "responseBody": "={\"success\":true,\"message\":\"Email de confirmacion enviado\"}",
         "options": {
           "responseCode": 200
         }
       },
-      "id": "success-response",
-      "name": "Respuesta Exitosa",
+      "id": "4",
+      "name": "Responder OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1200, 300]
+      "position": [960, 300]
     }
   ],
   "connections": {
-    "Recibir Webhook": {
+    "Webhook": {
       "main": [
         [
           {
-            "node": "Validar Secret",
+            "node": "Preparar Datos",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Validar Secret": {
+    "Preparar Datos": {
       "main": [
         [
           {
-            "node": "Parsear Payload",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Respuesta No Autorizada",
+            "node": "Enviar Email",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Parsear Payload": {
+    "Enviar Email": {
       "main": [
         [
           {
-            "node": "Enviar Email de Confirmación",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Enviar Email de Confirmación": {
-      "main": [
-        [
-          {
-            "node": "Respuesta Exitosa",
+            "node": "Responder OK",
             "type": "main",
             "index": 0
           }
@@ -161,21 +100,11 @@
   "pinData": {},
   "settings": {
     "executionOrder": "v1",
-    "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner",
-    "errorWorkflow": ""
+    "saveManualExecutions": true
   },
   "staticData": null,
-  "tags": [
-    {
-      "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z",
-      "id": "tag-aura-support",
-      "name": "AuraSupport"
-    }
-  ],
+  "tags": [],
   "triggerCount": 1,
-  "updatedAt": "2024-01-01T00:00:00.000Z",
-  "versionId": "1"
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "versionId": "2"
 }
-
