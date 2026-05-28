@@ -48,7 +48,10 @@ export default function LoginPage() {
 
   return (
     <div className="space-y-6">
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-2 flex flex-col items-center">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-400 transition-colors mb-2">
+          ← Volver al Inicio
+        </Link>
         <h1 className="text-3xl font-bold text-white">AuraSupport</h1>
         <p className="text-slate-300">Sistema de soporte técnico inteligente</p>
       </div>
