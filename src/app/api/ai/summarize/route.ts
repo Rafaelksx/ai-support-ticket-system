@@ -81,7 +81,7 @@ ${discussionHistory}
         { role: 'system', content: PROMPTS.SUMMARIZE.system },
         { role: 'user', content: promptInput }
       ],
-      response_format: { type: 'json_object' }
+      // response_format omitted — not supported by Gemini. Prompt drives JSON output.
     });
 
     const latencyMs = Date.now() - startTime;

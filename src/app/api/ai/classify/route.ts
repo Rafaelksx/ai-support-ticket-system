@@ -52,7 +52,8 @@ Creado por: ${ticket.profiles?.full_name || 'Desconocido'}
         { role: 'system', content: PROMPTS.CLASSIFY.system },
         { role: 'user', content: promptInput }
       ],
-      response_format: { type: 'json_object' }
+      // Note: response_format is omitted — Gemini doesn't support json_object.
+      // The system prompt already instructs the model to respond in strict JSON.
     });
 
     const latencyMs = Date.now() - startTime;
