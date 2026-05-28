@@ -1,6 +1,24 @@
 'use client';
 import { useEffect, useRef } from 'react';
-import { type LucideIcon } from 'lucide-react';
+import {
+  Ticket, LockOpen, AlertTriangle, UserCheck,
+  Inbox, CheckCircle, Clock, XCircle, TrendingUp, AlertCircle, Target, type LucideIcon,
+} from 'lucide-react';
+
+// Map de nombres → componentes de ícono (evita pasar funciones desde Server Components)
+const ICON_MAP: Record<string, LucideIcon> = {
+  ticket:           Ticket,
+  'lock-open':      LockOpen,
+  'alert-triangle': AlertTriangle,
+  'user-check':     UserCheck,
+  inbox:            Inbox,
+  'check-circle':   CheckCircle,
+  clock:            Clock,
+  'x-circle':       XCircle,
+  'trending-up':    TrendingUp,
+  'alert-circle':   AlertCircle,
+  target:           Target,
+};
 
 function useCountUp(target: number, duration = 1000) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -11,14 +29,12 @@ function useCountUp(target: number, duration = 1000) {
     if (!el) return;
 
     let startTime: number | null = null;
-    const startVal = 0;
 
     function step(timestamp: number) {
       if (!startTime) startTime = timestamp;
       const progress = Math.min((timestamp - startTime) / duration, 1);
-      // Ease-out cubic
       const ease = 1 - Math.pow(1 - progress, 3);
-      el!.textContent = Math.floor(startVal + (target - startVal) * ease).toString();
+      el!.textContent = Math.floor(target * ease).toString();
       if (progress < 1) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
@@ -38,14 +54,14 @@ const iconGradients: Record<string, { from: string; to: string; glow: string }> 
 export function MetricCard({
   title,
   value,
-  icon: Icon,
+  iconName,
   trend,
   color = 'default',
   staggerIndex = 0,
 }: {
   title: string;
   value: number | string;
-  icon: LucideIcon;
+  iconName: string;
   trend?: number;
   color?: keyof typeof iconGradients;
   staggerIndex?: number;
@@ -54,13 +70,14 @@ export function MetricCard({
   const countRef = useCountUp(isNumeric ? value : 0);
   const grad = iconGradients[color] ?? iconGradients.default;
   const delayClass = ['delay-0','delay-100','delay-200','delay-300','delay-400'][staggerIndex] ?? 'delay-0';
+  const Icon = ICON_MAP[iconName] ?? Ticket;
 
   return (
     <div
       className={`group relative rounded-2xl p-px animate-fade-up ${delayClass} overflow-hidden`}
       style={{ animationFillMode: 'both' }}
     >
-      {/* Gradient border */}
+      {/* Gradient border on hover */}
       <div
         className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${grad.from} ${grad.to} opacity-0 group-hover:opacity-20 transition-opacity duration-500`}
       />
@@ -92,7 +109,7 @@ export function MetricCard({
           <div
             className={`shrink-0 p-3 rounded-xl bg-gradient-to-br ${grad.from}/10 ${grad.to}/10 border border-white/[0.06] shadow-lg ${grad.glow} transition-transform duration-300 group-hover:scale-110`}
           >
-            <Icon className={`w-5 h-5 bg-gradient-to-br ${grad.from} ${grad.to} [&>*]:fill-current`} strokeWidth={1.75} style={{ color: 'white' }} />
+            <Icon className="w-5 h-5 text-white" strokeWidth={1.75} />
           </div>
         </div>
 

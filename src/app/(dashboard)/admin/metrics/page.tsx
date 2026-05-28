@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MetricCard } from '@/components/metric-card';
 import {
-  Ticket, CheckCircle2, AlertCircle, AlertTriangle,
+  CheckCircle2, AlertCircle, AlertTriangle,
   Users, Tag, Clock, ArrowLeft, ChevronRight, BarChart3,
   TrendingUp, Target,
 } from 'lucide-react';
@@ -112,10 +112,10 @@ export default async function MetricsPage() {
 
       {/* ── KPIs principales ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <MetricCard title="Total Tickets"       value={totalN}           icon={Ticket}        />
-        <MetricCard title="Tasa de Resolución"  value={`${resolutionRate}%`} icon={Target}    />
-        <MetricCard title="Críticos Activos"    value={critical || 0}    icon={AlertCircle}   />
-        <MetricCard title="Alta Prioridad"      value={high || 0}        icon={AlertTriangle} />
+        <MetricCard title="Total Tickets"       value={totalN}           iconName="ticket"          />
+        <MetricCard title="Tasa de Resolución"  value={`${resolutionRate}%`} iconName="trending-up" />
+        <MetricCard title="Críticos Activos"    value={critical || 0}    iconName="alert-circle"    />
+        <MetricCard title="Alta Prioridad"      value={high || 0}        iconName="alert-triangle"  />
       </div>
 
       {/* ── Distribución por estado y prioridad ──────────────────────────── */}

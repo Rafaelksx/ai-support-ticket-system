@@ -5,8 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MetricCard } from '@/components/metric-card';
 import {
-  Ticket, LockOpen, AlertTriangle, UserCheck,
-  Zap, ClipboardList, PlusCircle, TrendingUp, ChevronRight, Sparkles,
+  Zap, ClipboardList, PlusCircle, TrendingUp, ChevronRight, Sparkles, Ticket,
 } from 'lucide-react';
 
 export default async function DashboardPage() {
@@ -113,14 +112,14 @@ export default async function DashboardPage() {
         <MetricCard
           title="Total de Tickets"
           value={totalTickets}
-          icon={Ticket}
+          iconName="ticket"
           color="default"
           staggerIndex={0}
         />
         <MetricCard
           title="Tickets Abiertos"
           value={openTickets}
-          icon={LockOpen}
+          iconName="lock-open"
           color="warning"
           staggerIndex={1}
         />
@@ -129,14 +128,14 @@ export default async function DashboardPage() {
             <MetricCard
               title="Alta Prioridad"
               value={highPriorityTickets}
-              icon={AlertTriangle}
+              iconName="alert-triangle"
               color="danger"
               staggerIndex={2}
             />
             <MetricCard
               title="Asignados a Ti"
               value={assignedToMe}
-              icon={UserCheck}
+              iconName="user-check"
               color="success"
               staggerIndex={3}
             />
