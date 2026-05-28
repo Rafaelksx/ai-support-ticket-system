@@ -1,14 +1,15 @@
 import { Card, CardContent } from '@/components/ui/card';
+import { type LucideIcon } from 'lucide-react';
 
 export function MetricCard({
   title,
   value,
-  icon,
+  icon: Icon,
   trend,
 }: {
   title: string;
   value: number | string;
-  icon: string;
+  icon: LucideIcon;
   trend?: number;
 }) {
   return (
@@ -24,7 +25,9 @@ export function MetricCard({
               </p>
             )}
           </div>
-          <div className="text-4xl opacity-60">{icon}</div>
+          <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+            <Icon className="w-6 h-6 text-indigo-400" />
+          </div>
         </div>
       </CardContent>
     </Card>
