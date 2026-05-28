@@ -21,73 +21,225 @@
   --background: #f8fafc;
   --foreground: #0f172a;
   
-  --primary: #6366f1; /* Indigo 500 */
-  --primary-hover: #4f46e5; /* Indigo 600 */
-  --secondary: #0ea5e9; /* Sky 500 */
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --secondary: #0ea5e9;
   
   --card-bg: rgba(255, 255, 255, 0.7);
   --card-border: rgba(241, 245, 249, 0.8);
   
-  --success: #10b981; /* Emerald 500 */
-  --warning: #f59e0b; /* Amber 500 */
-  --danger: #ef4444; /* Red 500 */
-  --info: #3b82f6; /* Blue 500 */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
   
   --bg-gradient-start: #f1f5f9;
   --bg-gradient-end: #e2e8f0;
+
+  --glow-indigo: rgba(99, 102, 241, 0.3);
+  --glow-purple: rgba(168, 85, 247, 0.3);
+  --glow-emerald: rgba(16, 185, 129, 0.3);
+  --glow-amber: rgba(245, 158, 11, 0.3);
+  --glow-red: rgba(239, 68, 68, 0.3);
 }
 
-/* Premium Dark Mode by default for a wow factor */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #090d16;
+    --background: #060913;
     --foreground: #f1f5f9;
     
-    --primary: #818cf8; /* Indigo 400 */
-    --primary-hover: #6366f1; /* Indigo 500 */
-    --secondary: #38bdf8; /* Sky 400 */
+    --primary: #818cf8;
+    --primary-hover: #6366f1;
+    --secondary: #38bdf8;
     
-    --card-bg: rgba(17, 25, 40, 0.75);
-    --card-border: rgba(255, 255, 255, 0.08);
+    --card-bg: rgba(15, 18, 30, 0.8);
+    --card-border: rgba(99, 102, 241, 0.12);
     
-    --success: #34d399; /* Emerald 400 */
-    --warning: #fbbf24; /* Amber 400 */
-    --danger: #f87171; /* Red 400 */
-    --info: #60a5fa; /* Blue 400 */
+    --success: #34d399;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --info: #60a5fa;
     
     --bg-gradient-start: #060913;
     --bg-gradient-end: #0c1524;
   }
 }
 
+/* ─── Base body ──────────────────────────────────────────────── */
 body {
-  background: radial-gradient(circle at 50% 0%, var(--bg-gradient-end) 0%, var(--background) 70%);
+  background-color: #060913;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(168,85,247,0.08) 0%, transparent 60%),
+    radial-gradient(1px 1px at 0px 0px, rgba(255,255,255,0.03) 0%, transparent 50%);
+  background-size: 100% 100%, 100% 100%, 24px 24px;
   color: var(--foreground);
   min-height: 100vh;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 }
 
-/* Micro-animations and transitions */
+/* ─── Glassmorphism ──────────────────────────────────────────── */
 .glass-panel {
   background: var(--card-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--card-border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05);
 }
 
-/* Soft Pulsing for Critical Items */
+/* ─── Glow borders ───────────────────────────────────────────── */
+.glow-border-indigo {
+  border: 1px solid rgba(99,102,241,0.3);
+  box-shadow: 0 0 20px rgba(99,102,241,0.1), inset 0 1px 0 rgba(99,102,241,0.1);
+}
+.glow-border-purple {
+  border: 1px solid rgba(168,85,247,0.3);
+  box-shadow: 0 0 20px rgba(168,85,247,0.1), inset 0 1px 0 rgba(168,85,247,0.1);
+}
+
+/* ─── Gradient text ──────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gradient-text-warm {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Keyframe Animations ────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(99,102,241,0.3); }
+  50%       { box-shadow: 0 0 24px rgba(99,102,241,0.6), 0 0 48px rgba(99,102,241,0.2); }
+}
+
 @keyframes pulse-soft {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: .8;
-    transform: scale(1.02);
-  }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.8; transform: scale(1.02); }
 }
 
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes orb-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(20px, -15px) scale(1.05); }
+  66%       { transform: translate(-15px, 10px) scale(0.97); }
+}
+
+/* ─── Animation utility classes ──────────────────────────────── */
+.animate-fade-up        { animation: fadeInUp 0.5s ease both; }
+.animate-fade-in        { animation: fadeIn 0.4s ease both; }
+.animate-slide-left     { animation: slideInLeft 0.4s ease both; }
+.animate-slide-right    { animation: slideInRight 0.4s ease both; }
+.animate-float          { animation: float 4s ease-in-out infinite; }
+.animate-shimmer        { animation: shimmer 2.5s linear infinite; }
+.animate-glow-pulse     { animation: glow-pulse 2.5s ease-in-out infinite; }
+.animate-spin-slow      { animation: spin-slow 8s linear infinite; }
+.animate-orb            { animation: orb-float 12s ease-in-out infinite; }
+
+/* Stagger delays */
+.delay-0   { animation-delay: 0ms; }
+.delay-75  { animation-delay: 75ms; }
+.delay-100 { animation-delay: 100ms; }
+.delay-150 { animation-delay: 150ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+
+/* ─── Shimmer card skeleton ──────────────────────────────────── */
+.shimmer-card {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.04) 50%,
+    rgba(255,255,255,0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* ─── Card hover glow ────────────────────────────────────────── */
+.card-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 20px rgba(99,102,241,0.12);
+  border-color: rgba(99,102,241,0.3) !important;
+}
+
+/* ─── Active sidebar indicator ───────────────────────────────── */
+.sidebar-active {
+  background: linear-gradient(90deg, rgba(99,102,241,0.2) 0%, rgba(168,85,247,0.08) 100%);
+  border-left: 2px solid #818cf8;
+  box-shadow: inset 0 0 20px rgba(99,102,241,0.06);
+}
+
+/* ─── Input focus glow ───────────────────────────────────────── */
+.input-glow:focus {
+  outline: none;
+  border-color: rgba(99,102,241,0.6);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15), 0 0 12px rgba(99,102,241,0.1);
+}
+
+/* ─── Critical pulse ─────────────────────────────────────────── */
 .pulse-critical {
   animation: pulse-soft 2s infinite ease-in-out;
+}
+
+/* ─── Button shimmer ─────────────────────────────────────────── */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
+}
+.btn-shimmer:hover::after {
+  left: 150%;
 }
