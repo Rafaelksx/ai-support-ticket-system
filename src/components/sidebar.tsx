@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard, Ticket, PlusCircle, Bell, Users, TrendingUp, type LucideIcon,
+  LayoutDashboard, Ticket, PlusCircle, Bell, Users, TrendingUp, UserCircle, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem {
@@ -19,6 +19,7 @@ const navItems: NavItem[] = [
   { href: '/tickets',       label: 'Tickets',             Icon: Ticket,          group: 'Principal' },
   { href: '/tickets/new',   label: 'Nuevo Ticket',        Icon: PlusCircle,      group: 'Principal' },
   { href: '/notifications', label: 'Notificaciones',      Icon: Bell,            group: 'Principal' },
+  { href: '/profile',       label: 'Mi Perfil',           Icon: UserCircle,      group: 'Cuenta'    },
   { href: '/admin/users',   label: 'Gestionar Usuarios',  Icon: Users,           group: 'Administración', adminOnly: true },
   { href: '/admin/metrics', label: 'Métricas',            Icon: TrendingUp,      group: 'Administración', adminOnly: true },
 ];

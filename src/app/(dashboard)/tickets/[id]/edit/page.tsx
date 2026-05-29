@@ -84,19 +84,20 @@ export default function EditTicketPage({
     setError('');
 
     try {
-      const supabase = createClient();
-      const { error: updateError } = await supabase
-        .from('tickets')
-        .update({
+      const res = await fetch(`/api/tickets/${ticketId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           status,
           priority,
           assigned_to: assignedTo || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', ticketId);
+        }),
+      });
 
-      if (updateError) {
-        setError(updateError.message);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || data.message || 'Error al guardar');
         setIsSaving(false);
         return;
       }

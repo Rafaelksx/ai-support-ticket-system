@@ -144,6 +144,37 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }).catch((err) => console.error('[v0] Webhook trigger failed:', err));
     }
 
+    // Trigger assignment webhook when assigned_to changes
+    if ('assigned_to' in updateData && updateData.assigned_to) {
+      const webhookUrl = process.env.N8N_WEBHOOK_TICKET_ASSIGNED;
+      if (webhookUrl) {
+        // Fetch agent email for the notification
+        const { data: agentProfile } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', updateData.assigned_to)
+          .single();
+
+        fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Webhook-Secret': process.env.N8N_WEBHOOK_SECRET || '',
+          },
+          body: JSON.stringify({
+            event: 'ticket_assigned',
+            ticket_id: ticketId,
+            ticket_title: ticket?.title,
+            ticket_priority: ticket?.priority || updateData.priority,
+            assigned_agent_id: updateData.assigned_to,
+            assigned_agent_name: agentProfile?.full_name,
+            assigned_agent_email: agentProfile?.email,
+            app_url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+          }),
+        }).catch((err) => console.error('[v0] Assignment webhook failed:', err));
+      }
+    }
+
     return successResponse(ticket);
   } catch (error) {
     console.error('[v0] PATCH /api/tickets/[id] error:', error);

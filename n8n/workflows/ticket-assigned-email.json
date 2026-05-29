@@ -1,0 +1,94 @@
+{
+  "name": "Ticket Asignado — Notificación al Agente",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ticket-assigned",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-ticket-assigned",
+      "name": "Recibir Webhook Asignación",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "ticket-assigned"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "validate-event",
+              "leftValue": "={{ $json.body.event }}",
+              "rightValue": "ticket_assigned",
+              "operator": { "type": "string", "operation": "equals" }
+            },
+            {
+              "id": "validate-email",
+              "leftValue": "={{ $json.body.assigned_agent_email }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "filter-valid-assignment",
+      "name": "¿Asignación válida?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.body.assigned_agent_email }}",
+        "subject": "=🎫 Ticket asignado: {{ $json.body.ticket_title }}",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Ticket Asignado</title>\n</head>\n<body style=\"margin:0;padding:0;background:#060913;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#060913;padding:32px 16px;\">\n    <tr>\n      <td align=\"center\">\n        <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;width:100%;\">\n\n          <!-- Header -->\n          <tr>\n            <td style=\"background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:16px 16px 0 0;padding:32px;text-align:center;\">\n              <div style=\"font-size:32px;margin-bottom:8px;\">🎫</div>\n              <h1 style=\"color:#fff;font-size:22px;font-weight:700;margin:0;letter-spacing:-0.5px;\">Ticket Asignado</h1>\n              <p style=\"color:rgba(255,255,255,0.7);font-size:14px;margin:8px 0 0;\">Se te ha asignado un nuevo ticket de soporte</p>\n            </td>\n          </tr>\n\n          <!-- Body -->\n          <tr>\n            <td style=\"background:#0f0a1e;border:1px solid rgba(99,102,241,0.15);border-top:none;border-radius:0 0 16px 16px;padding:32px;\">\n\n              <p style=\"color:#94a3b8;font-size:15px;line-height:1.6;margin:0 0 24px;\">Hola <strong style=\"color:#e2e8f0;\">{{ $json.body.assigned_agent_name }}</strong>,</p>\n              <p style=\"color:#94a3b8;font-size:15px;line-height:1.6;margin:0 0 24px;\">Se te ha asignado el siguiente ticket y requiere tu atención:</p>\n\n              <!-- Ticket Card -->\n              <div style=\"background:rgba(99,102,241,0.05);border:1px solid rgba(99,102,241,0.2);border-radius:12px;padding:20px;margin-bottom:24px;\">\n                <h2 style=\"color:#c7d2fe;font-size:17px;font-weight:600;margin:0 0 12px;\">{{ $json.body.ticket_title }}</h2>\n                <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">\n                  <tr>\n                    <td style=\"padding:4px 0;\">\n                      <span style=\"color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;\">ID del Ticket</span><br>\n                      <span style=\"color:#94a3b8;font-size:14px;font-family:monospace;\">{{ $json.body.ticket_id }}</span>\n                    </td>\n                    <td style=\"padding:4px 0;text-align:right;\">\n                      <span style=\"color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;\">Prioridad</span><br>\n                      <span style=\"background:{{ $json.body.ticket_priority === 'critical' ? '#7f1d1d' : $json.body.ticket_priority === 'high' ? '#78350f' : '#1e3a5f' }};color:{{ $json.body.ticket_priority === 'critical' ? '#fca5a5' : $json.body.ticket_priority === 'high' ? '#fcd34d' : '#93c5fd' }};padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;text-transform:capitalize;\">{{ $json.body.ticket_priority }}</span>\n                    </td>\n                  </tr>\n                </table>\n              </div>\n\n              <!-- CTA Button -->\n              <div style=\"text-align:center;margin-bottom:24px;\">\n                <a href=\"{{ $json.body.app_url }}/tickets/{{ $json.body.ticket_id }}\" \n                   style=\"display:inline-block;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:15px;font-weight:600;letter-spacing:-0.2px;\">Ver Ticket →</a>\n              </div>\n\n              <p style=\"color:#475569;font-size:13px;text-align:center;margin:0;\">Si no puedes atender este ticket, por favor reasígnalo lo antes posible.</p>\n\n              <hr style=\"border:none;border-top:1px solid rgba(255,255,255,0.06);margin:24px 0;\">\n              <p style=\"color:#334155;font-size:12px;text-align:center;margin:0;\">AuraSupport • Sistema de soporte técnico inteligente</p>\n            </td>\n          </tr>\n\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-agent-email",
+      "name": "Enviar Email al Agente",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [680, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-credentials",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"ok\": true, \"message\": \"Notification sent\" }"
+      },
+      "id": "respond-ok",
+      "name": "Responder OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Recibir Webhook Asignación": {
+      "main": [[ { "node": "¿Asignación válida?", "type": "main", "index": 0 } ]]
+    },
+    "¿Asignación válida?": {
+      "main": [[ { "node": "Enviar Email al Agente", "type": "main", "index": 0 } ]]
+    },
+    "Enviar Email al Agente": {
+      "main": [[ { "node": "Responder OK", "type": "main", "index": 0 } ]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "ticket-assigned-v1",
+  "meta": { "templateId": "ticket-assigned-email" },
+  "tags": []
+}
