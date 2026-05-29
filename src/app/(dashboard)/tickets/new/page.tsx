@@ -12,6 +12,7 @@ export default function NewTicketPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [priority, setPriority] = useState('medium');
   const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -50,7 +51,7 @@ export default function NewTicketPage() {
           category_id: categoryId || null,
           created_by: user.id,
           status: 'open',
-          priority: 'medium',
+          priority: priority,
         })
         .select('id')
         .single();
@@ -148,6 +149,27 @@ export default function NewTicketPage() {
                     {cat.name}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-300 tracking-wide uppercase block mb-2">
+                Prioridad
+              </label>
+              <select
+                className={`
+                  w-full px-3.5 py-2 text-sm rounded-lg bg-white/50 dark:bg-slate-900/40 
+                  border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100
+                  transition-all duration-200 backdrop-blur-sm
+                  focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary
+                `}
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+              >
+                <option value="low">Baja</option>
+                <option value="medium">Media</option>
+                <option value="high">Alta</option>
+                <option value="critical">Crítica</option>
               </select>
             </div>
 

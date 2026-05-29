@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import {
   getAuthUser,
   validateRequestBody,
@@ -136,7 +136,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Create notification for ticket creator if commenter is agent
     const userProfile = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if ((userProfile.data?.role === 'agent' || userProfile.data?.role === 'admin') && ticket.created_by !== user.id) {
-      await supabase.from('notifications').insert([
+      const adminSupabase = createAdminClient();
+      await adminSupabase.from('notifications').insert([
         {
           user_id: ticket.created_by,
           ticket_id: ticketId,

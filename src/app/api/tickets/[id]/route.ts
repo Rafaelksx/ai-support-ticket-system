@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import {
   getAuthUser,
   validateRequestBody,
@@ -111,6 +111,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       Object.entries(validation.data || {}).filter(([_, v]) => v !== undefined)
     );
 
+    // Validate that only admins can update assigned_to
+    if ('assigned_to' in updateData) {
+      const isAdmin = await checkUserRole(user.id, ['admin']);
+      if (!isAdmin) {
+        // Fetch current ticket to verify if assigned_to is actually changing
+        const { data: currentTicket } = await supabase
+          .from('tickets')
+          .select('assigned_to')
+          .eq('id', ticketId)
+          .single();
+
+        if (currentTicket && currentTicket.assigned_to !== updateData.assigned_to) {
+          return errorResponse('Solo los administradores pueden asignar o reasignar tickets', 'FORBIDDEN', 403);
+        }
+      }
+    }
+
     // Add resolved_at if status changes to resolved
     if (updateData.status === 'resolved' && !updateData.resolved_at) {
       updateData.resolved_at = new Date().toISOString();
@@ -173,6 +190,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           }),
         }).catch((err) => console.error('[v0] Assignment webhook failed:', err));
       }
+    }
+
+    // Create database notification for the assigned agent
+    if ('assigned_to' in updateData && updateData.assigned_to) {
+      const adminSupabase = createAdminClient();
+      await adminSupabase.from('notifications').insert([
+        {
+          user_id: updateData.assigned_to,
+          ticket_id: ticketId,
+          title: 'Ticket asignado',
+          message: `Te han asignado el ticket: ${ticket?.title || 'Nuevo ticket'}`,
+        },
+      ]);
     }
 
     return successResponse(ticket);

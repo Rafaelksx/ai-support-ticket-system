@@ -19,6 +19,7 @@ const createTicketSchema = z.object({
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres').max(255),
   description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres'),
   category_id: z.string().uuid().optional(),
+  priority: z.enum(['low', 'medium', 'high', 'critical']).optional().default('medium'),
 });
 
 /**
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
       return errorResponse(validation.error || 'Datos inválidos', 'VALIDATION_ERROR', 400);
     }
 
-    const { title, description, category_id } = validation.data!;
+    const { title, description, category_id, priority } = validation.data!;
 
     const supabase = await createClient();
 
@@ -140,7 +141,7 @@ export async function POST(request: NextRequest) {
           category_id: category_id || null,
           created_by: user.id,
           status: 'open',
-          priority: 'medium',
+          priority: priority || 'medium',
         },
       ])
       .select()

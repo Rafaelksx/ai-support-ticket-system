@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import {
   getAuthUser,
   validateRequestBody,
@@ -73,7 +73,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     });
 
     // Create notification for user about role change
-    await supabase.from('notifications').insert([
+    const adminSupabase = createAdminClient();
+    await adminSupabase.from('notifications').insert([
       {
         user_id: id,
         title: 'Tu rol ha sido actualizado',

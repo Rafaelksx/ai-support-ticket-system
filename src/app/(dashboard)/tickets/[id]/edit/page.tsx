@@ -24,6 +24,7 @@ export default function EditTicketPage({
   const [status, setStatus] = useState('open');
   const [priority, setPriority] = useState('medium');
   const [assignedTo, setAssignedTo] = useState('');
+  const [userRole, setUserRole] = useState('');
   const [agents, setAgents] = useState<any[]>([]);
 
   useEffect(() => {
@@ -50,6 +51,8 @@ export default function EditTicketPage({
         router.push(`/tickets/${resolved.id}`);
         return;
       }
+
+      setUserRole(profile?.role || '');
 
       // Fetch ticket
       const { data: ticketData } = await supabase
@@ -90,7 +93,7 @@ export default function EditTicketPage({
         body: JSON.stringify({
           status,
           priority,
-          assigned_to: assignedTo || null,
+          ...(userRole === 'admin' ? { assigned_to: assignedTo || null } : {}),
         }),
       });
 
@@ -183,28 +186,30 @@ export default function EditTicketPage({
               </select>
             </div>
 
-            <div>
-              <label className="text-xs font-semibold text-slate-300 tracking-wide uppercase block mb-2">
-                Asignar a
-              </label>
-              <select
-                className={`
-                  w-full px-3.5 py-2 text-sm rounded-lg bg-white/50 dark:bg-slate-900/40 
-                  border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100
-                  transition-all duration-200 backdrop-blur-sm
-                  focus:outline-none focus:ring-2 focus:ring-primary/40
-                `}
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
-              >
-                <option value="">Sin asignar</option>
-                {agents.map((agent) => (
-                  <option key={agent.id} value={agent.id}>
-                    {agent.full_name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {userRole === 'admin' && (
+              <div>
+                <label className="text-xs font-semibold text-slate-300 tracking-wide uppercase block mb-2">
+                  Asignar a
+                </label>
+                <select
+                  className={`
+                    w-full px-3.5 py-2 text-sm rounded-lg bg-white/50 dark:bg-slate-900/40 
+                    border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100
+                    transition-all duration-200 backdrop-blur-sm
+                    focus:outline-none focus:ring-2 focus:ring-primary/40
+                  `}
+                  value={assignedTo}
+                  onChange={(e) => setAssignedTo(e.target.value)}
+                >
+                  <option value="">Sin asignar</option>
+                  {agents.map((agent) => (
+                    <option key={agent.id} value={agent.id}>
+                      {agent.full_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {error && (
               <div className="p-3 rounded-lg bg-danger/10 border border-danger/20 text-danger text-sm">

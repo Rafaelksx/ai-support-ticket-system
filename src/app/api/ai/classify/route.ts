@@ -70,7 +70,6 @@ Creado por: ${ticket.profiles?.full_name || 'Desconocido'}
       .from('tickets')
       .update({
         ai_summary: validatedData.summary,
-        priority: validatedData.classification.priority,
         sentiment: validatedData.classification.sentiment,
         ai_risk_level: validatedData.riskLevel,
         ai_classification: validatedData,

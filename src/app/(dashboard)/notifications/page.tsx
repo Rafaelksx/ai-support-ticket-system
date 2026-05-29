@@ -32,12 +32,12 @@ export default function NotificationsPage() {
     const supabase = createClient();
     const { error } = await supabase
       .from('notifications')
-      .update({ read: true })
+      .update({ is_read: true })
       .eq('id', notificationId);
 
     if (!error) {
       setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+        prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
       );
     }
   };
@@ -50,7 +50,7 @@ export default function NotificationsPage() {
     );
   }
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
     <div className="space-y-6">
@@ -78,7 +78,7 @@ export default function NotificationsPage() {
                 <div
                   key={notification.id}
                   className={`p-4 rounded-lg border ${
-                    notification.read
+                    notification.is_read
                       ? 'border-slate-700 bg-slate-900/50'
                       : 'border-indigo-600/50 bg-indigo-900/20'
                   }`}
@@ -89,7 +89,7 @@ export default function NotificationsPage() {
                         <p className="font-medium text-white">
                           {notification.title}
                         </p>
-                        {!notification.read && (
+                        {!notification.is_read && (
                           <Badge className="bg-indigo-600">Nuevo</Badge>
                         )}
                       </div>
@@ -100,7 +100,7 @@ export default function NotificationsPage() {
                         {new Date(notification.created_at).toLocaleString()}
                       </p>
                     </div>
-                    {!notification.read && (
+                    {!notification.is_read && (
                       <Button
                         variant="ghost"
                         size="sm"

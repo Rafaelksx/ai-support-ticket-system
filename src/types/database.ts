@@ -123,6 +123,7 @@ export interface CreateTicketRequest {
   title: string;
   description: string;
   category_id?: string;
+  priority?: TicketPriority;
 }
 
 export interface UpdateTicketRequest {
